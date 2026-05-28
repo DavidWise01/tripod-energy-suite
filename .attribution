@@ -1,0 +1,50 @@
+{
+  "schema": "ROOT0-ATTRIBUTION-v1",
+  "work": {
+    "title": "TriPod Energy Suite — Civilization-Scale Energy Simulators",
+    "versions": [
+      "black-hole-energy-v1.html",
+      "black-hole-energy-v2.html",
+      "dyson-sphere.html"
+    ],
+    "created": "2024-2025",
+    "description": "Two interactive physics simulators covering the full Kardashev energy scale. Black Hole Energy: 4 extraction methods (Hawking, Penrose, Superradiance, Blandford-Znajek), v2 with real Kerr metric. Dyson Sphere: Swarm/Bubble/Shell variants with real solar flux, orbital mechanics, and Kardashev index calculation.",
+    "license": "CC-BY-ND-4.0",
+    "url": "https://github.com/DavidWise01/tripod-energy-suite"
+  },
+  "human": {
+    "name": "David Lee Wise",
+    "handle": "ROOT0",
+    "github_user": "DavidWise01",
+    "entity": "TriPod LLC",
+    "substrate": "human",
+    "role": "designer · developer · physicist · architect",
+    "contribution": "Full design and implementation — physics engines, visualization, UX, scale modeling"
+  },
+  "technical": {
+    "api": "Canvas 2D, Web Audio API (where applicable)",
+    "physics_constants": "CODATA 2018 (G, c, ℏ, kB, σ)",
+    "dependencies": "none",
+    "font": "JetBrains Mono (Google Fonts)",
+    "mobile": "responsive, touch-capable"
+  },
+  "tools": {
+    "black_hole_energy": {
+      "v1_physics": "Simplified Hawking T = 6.17e-8 / M, conceptual geometry",
+      "v2_physics": "Real Kerr metric, Schwarzschild radius rs = 2GM/c², horizons r± = (rs/2)(1 ± sqrt(1-a²))",
+      "methods": [
+        "Hawking Radiation (~0.1% efficiency)",
+        "Superradiant Scattering (~4.8%)",
+        "Penrose Process (~20.7%)",
+        "Blandford-Znajek (~15.2%+)"
+      ],
+      "visualization": "Accretion disk particles, Hawking radiation particles, relativistic jets"
+    },
+    "dyson_sphere": {
+      "variants": ["Swarm", "Bubble", "Shell"],
+      "physics": "Solar flux F=L/(4πR²), Kepler T=2π√(R³/GM), Stefan-Boltzmann Teq, Kardashev K=(log10(P)-6)/10",
+      "bubble_key": "Critical areal density = L/(4π·G·M·c) for radiation pressure hover",
+      "visualization": "Animated canvas — star glow, collector particles, 3D orbital projection"
+    }
+  }
+}

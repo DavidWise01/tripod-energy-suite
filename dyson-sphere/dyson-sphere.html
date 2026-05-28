@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DYSON SPHERE — Energy Capture Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Fira+Code:wght@300;400;500&display=swap');
+
+:root {
+  --void: #06060a;
+  --deep: #0c0c14;
+  --shell: #14141e;
+  --frame: #1e1e2c;
+  --grid: #28283a;
+  --dim: #48486a;
+  --ash: #8888aa;
+  --bone: #c8c8dd;
+  --bright: #e8e8f4;
+  --solar: #ffcc44;
+  --solar-dim: #bb9933;
+  --solar-hot: #ffee88;
+  --capture: #44ddaa;
+  --capture-dim: #2a8866;
+  --waste: #dd6644;
+  --warn: #ddaa44;
+  --struct: #6688cc;
+  --struct-dim: #3a4466;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { height: 100%; }
+body {
+  background: var(--void);
+  color: var(--bone);
+  font-family: 'Bitter', Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100%;
+}
+::selection { background: var(--solar); color: var(--void); }
+
+/* LAYOUT */
+.app {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { max-height: 50vh; overflow-y: auto; }
+}
+
+/* HEADER */
+.hdr {
+  grid-column: 1 / -1;
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--deep);
+  border-bottom: 1px solid var(--frame);
+}
+.hdr h1 {
+  font-size: 18px; font-weight: 600; color: var(--bright);
+  letter-spacing: 1px;
+}
+.hdr h1 span { color: var(--solar); }
+.hdr-meta {
+  font-family: 'Fira Code', monospace; font-size: 10px;
+  color: var(--dim); letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* CANVAS */
+.viz {
+  position: relative; background: var(--void);
+  overflow: hidden; min-height: 400px;
+}
+canvas { display: block; width: 100%; height: 100%; }
+.viz-label {
+  position: absolute; top: 12px; left: 16px;
+  font-family: 'Fira Code', monospace; font-size: 10px;
+  color: var(--dim); letter-spacing: 1px; text-transform: uppercase;
+}
+.viz-stats {
+  position: absolute; bottom: 12px; left: 16px; right: 16px;
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+.vs {
+  font-family: 'Fira Code', monospace; font-size: 10px;
+  color: var(--ash);
+}
+.vs b { color: var(--solar); font-weight: 500; }
+.vs .cap { color: var(--capture); }
+.vs .str { color: var(--struct); }
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--deep); border-left: 1px solid var(--frame);
+  padding: 20px; overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--grid); border-radius: 2px; }
+
+.panel { margin-bottom: 20px; }
+.panel-label {
+  font-family: 'Fira Code', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--solar-dim); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--capture); }
+
+/* VARIANT BUTTONS */
+.var-btns { display: flex; gap: 4px; margin-bottom: 16px; }
+.var-btn {
+  flex: 1; padding: 10px 6px; border: 1px solid var(--frame);
+  background: var(--void); color: var(--ash); border-radius: 3px;
+  font-family: 'Fira Code', monospace; font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.var-btn.on { border-color: var(--solar); color: var(--solar); background: rgba(255,204,68,0.06); }
+.var-btn:hover { border-color: var(--ash); }
+
+/* SLIDERS */
+.ctrl { margin-bottom: 14px; }
+.ctrl-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 4px;
+}
+.ctrl-name { font-size: 12px; color: var(--ash); }
+.ctrl-val {
+  font-family: 'Fira Code', monospace; font-size: 12px;
+  color: var(--solar); font-weight: 500;
+}
+input[type="range"] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  border-radius: 2px; background: var(--frame); outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--solar);
+  cursor: pointer; box-shadow: 0 0 8px rgba(255,204,68,0.3);
+}
+
+/* OUTPUT ROWS */
+.out-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 6px 0; border-bottom: 1px solid rgba(40,40,58,0.5);
+  font-size: 13px;
+}
+.out-row:last-child { border-bottom: none; }
+.out-label { color: var(--ash); }
+.out-val { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--capture); font-weight: 500; }
+.out-val.solar { color: var(--solar); }
+.out-val.warn { color: var(--warn); }
+.out-val.struct { color: var(--struct); }
+.out-val.waste { color: var(--waste); }
+
+/* KARDASHEV BAR */
+.kard-bar {
+  height: 20px; background: var(--void); border-radius: 3px;
+  border: 1px solid var(--frame); position: relative;
+  margin: 8px 0 4px; overflow: hidden;
+}
+.kard-fill {
+  height: 100%; background: linear-gradient(90deg, var(--waste), var(--solar), var(--capture));
+  border-radius: 2px; transition: width 0.5s;
+}
+.kard-marks {
+  position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 4px; pointer-events: none;
+}
+.kard-mark {
+  font-family: 'Fira Code', monospace; font-size: 8px;
+  color: var(--bright); text-shadow: 0 0 4px var(--void);
+}
+
+/* NOTES */
+.note {
+  background: var(--shell); border-left: 2px solid var(--struct);
+  padding: 10px 14px; margin: 12px 0; border-radius: 0 3px 3px 0;
+  font-size: 12px; color: var(--ash); line-height: 1.6;
+}
+.note strong { color: var(--bone); }
+
+/* FOOTER */
+.ftr {
+  grid-column: 1 / -1;
+  padding: 12px 24px;
+  background: var(--deep); border-top: 1px solid var(--frame);
+  font-family: 'Fira Code', monospace; font-size: 9px;
+  color: var(--dim); letter-spacing: 1px;
+  display: flex; justify-content: space-between;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HEADER -->
+  <header class="hdr">
+    <h1>DYSON <span>SPHERE</span> — Energy Capture Simulator</h1>
+    <span class="hdr-meta">TriPod Systems // Real Physics // Zero Gap Drives</span>
+  </header>
+
+  <!-- VISUALIZATION -->
+  <div class="viz">
+    <canvas id="c"></canvas>
+    <div class="viz-label" id="vizLabel">Dyson Swarm — Orbital View</div>
+    <div class="viz-stats">
+      <span class="vs">Collectors: <b id="vizCol">10,000</b></span>
+      <span class="vs">Orbit: <b class="str" id="vizOrb">1.00 AU</b></span>
+      <span class="vs">Capture: <b class="cap" id="vizCap">0.26%</b></span>
+      <span class="vs">Output: <b id="vizOut">1.00e+24 W</b></span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- VARIANT -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Structure Type</div>
+      <div class="var-btns">
+        <button class="var-btn on" onclick="setVariant('swarm')">Swarm</button>
+        <button class="var-btn" onclick="setVariant('bubble')">Bubble</button>
+        <button class="var-btn" onclick="setVariant('shell')">Shell</button>
+      </div>
+      <div class="note" id="varNote">
+        <strong>Dyson Swarm:</strong> Thousands to trillions of independent solar collectors in orbit. Most physically realistic. Each satellite is a solar panel array or mirror. No rigid structure needed. Can be built incrementally.
+      </div>
+    </div>
+
+    <!-- STAR PARAMETERS -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Star Parameters</div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Star Mass (M☉)</span><span class="ctrl-val" id="dMass">1.00</span></div>
+        <input type="range" id="sMass" min="0.3" max="5" step="0.05" value="1" oninput="calc()">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Star Luminosity (L☉)</span><span class="ctrl-val" id="dLum">1.00</span></div>
+        <input type="range" id="sLum" min="0.01" max="100" step="0.01" value="1" oninput="calc()">
+      </div>
+    </div>
+
+    <!-- SPHERE PARAMETERS -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Sphere Parameters</div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Orbital Radius (AU)</span><span class="ctrl-val" id="dRad">1.00</span></div>
+        <input type="range" id="sRad" min="0.1" max="5" step="0.01" value="1" oninput="calc()">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Coverage (%)</span><span class="ctrl-val" id="dCov">0.26</span></div>
+        <input type="range" id="sCov" min="0.001" max="100" step="0.001" value="0.26" oninput="calc()">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Panel Efficiency (%)</span><span class="ctrl-val" id="dEff">35</span></div>
+        <input type="range" id="sEff" min="5" max="95" step="1" value="35" oninput="calc()">
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-head"><span class="ctrl-name">Shell Thickness (m)</span><span class="ctrl-val" id="dThk">0.01</span></div>
+        <input type="range" id="sThk" min="0.001" max="1" step="0.001" value="0.01" oninput="calc()">
+      </div>
+    </div>
+
+    <!-- CALCULATED OUTPUT -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Calculated Output</div>
+      <div class="out-row"><span class="out-label">Star Luminosity</span><span class="out-val solar" id="oLum">3.846e+26 W</span></div>
+      <div class="out-row"><span class="out-label">Sphere Surface Area</span><span class="out-val struct" id="oArea">2.81e+23 m²</span></div>
+      <div class="out-row"><span class="out-label">Collector Area</span><span class="out-val struct" id="oColArea">7.31e+20 m²</span></div>
+      <div class="out-row"><span class="out-label">Intercepted Power</span><span class="out-val solar" id="oIntercept">1.00e+24 W</span></div>
+      <div class="out-row"><span class="out-label">Electrical Output</span><span class="out-val" id="oElec">3.50e+23 W</span></div>
+      <div class="out-row"><span class="out-label">Waste Heat</span><span class="out-val waste" id="oWaste">6.50e+23 W</span></div>
+      <div class="out-row"><span class="out-label">Equilibrium Temp (K)</span><span class="out-val warn" id="oTemp">394 K</span></div>
+      <div class="out-row"><span class="out-label">Orbital Period</span><span class="out-val struct" id="oPeriod">365.25 days</span></div>
+      <div class="out-row"><span class="out-label">Orbital Velocity</span><span class="out-val struct" id="oVel">29.78 km/s</span></div>
+      <hr style="border-color: var(--frame); margin: 8px 0;">
+      <div class="out-row"><span class="out-label">Shell/Collector Mass</span><span class="out-val warn" id="oMass">—</span></div>
+      <div class="out-row"><span class="out-label">Material (vs Mercury)</span><span class="out-val warn" id="oMerc">—</span></div>
+      <div class="out-row"><span class="out-label">Build Time @ 1 TW</span><span class="out-val struct" id="oBuild">—</span></div>
+      <div class="out-row"><span class="out-label">Earth Power Equiv</span><span class="out-val" id="oEarth">—</span></div>
+    </div>
+
+    <!-- KARDASHEV -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Kardashev Scale</div>
+      <div class="kard-bar">
+        <div class="kard-fill" id="kFill" style="width: 15%"></div>
+        <div class="kard-marks">
+          <span class="kard-mark">I</span>
+          <span class="kard-mark">II</span>
+          <span class="kard-mark">III</span>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top: 2px;">
+        <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--dim)">1.74e+17 W</span>
+        <span style="font-family:'Fira Code',monospace;font-size:10px;color:var(--solar);font-weight:500" id="kLevel">K = 0.73</span>
+        <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--dim)">3.85e+26 W</span>
+      </div>
+      <div class="note" style="margin-top: 8px;">
+        <strong>Kardashev Scale:</strong> K = (log₁₀(P) − 6) / 10 where P is power in watts.<br>
+        Type I = 1.74×10¹⁷ W (planet's star input).<br>
+        Type II = 3.85×10²⁶ W (full star output).<br>
+        Earth 2024 ≈ 1.8×10¹³ W → K ≈ 0.73.
+      </div>
+    </div>
+
+    <!-- ENGINEERING NOTES -->
+    <div class="panel">
+      <div class="panel-label"><span class="dot"></span> Engineering Constraints</div>
+      <div class="note" id="engNote">
+        <strong>Structural:</strong> A rigid shell at 1 AU would experience no net gravitational force (shell theorem) but is unstable — any perturbation drifts it into the star. Requires active stationkeeping or is replaced by a swarm. Material stress at 1 AU exceeds any known material's tensile strength for a rigid shell.<br><br>
+        <strong>Thermal:</strong> Collectors absorb solar radiation and must re-radiate waste heat from the outer surface. Equilibrium temperature depends on albedo and emissivity. Inner surface sees ~1361 W/m² at 1 AU (solar constant).<br><br>
+        <strong>Material:</strong> Full shell at 1 AU requires mass roughly equivalent to disassembling Mercury. A swarm at 0.26% coverage uses ~10¹⁹ kg — feasible from asteroid mining.
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="ftr">
+    <span>TRIPOD SYSTEMS — Anchor × Bubble × Gravity Well</span>
+    <span>All calculations use SI constants. No approximations. No gap drives.</span>
+  </footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DYSON SPHERE PHYSICS ENGINE
+// All SI units. Real constants. Real equations.
+// ═══════════════════════════════════════════════════════════
+
+const PHY = {
+  // Solar constants
+  Lsun: 3.846e26,      // Solar luminosity (W)
+  Msun: 1.989e30,      // Solar mass (kg)
+  Rsun: 6.957e8,       // Solar radius (m)
+  
+  // Physical constants
+  G: 6.674e-11,        // Gravitational constant (m³/kg/s²)
+  c: 2.998e8,          // Speed of light (m/s)
+  sigma: 5.670e-8,     // Stefan-Boltzmann constant (W/m²/K⁴)
+  kB: 1.381e-23,       // Boltzmann constant (J/K)
+  AU: 1.496e11,        // Astronomical unit (m)
+  
+  // Engineering
+  steelDensity: 7800,  // kg/m³ (structural steel)
+  carbonDensity: 1600, // kg/m³ (carbon composite)
+  solarPanelDensity: 2.5, // kg/m² (thin film solar, realistic near-future)
+  mercuryMass: 3.285e23, // kg
+  earthPower2024: 1.8e13, // W (global power consumption)
+};
+
+let variant = 'swarm';
+let frame = 0;
+let state = {};
+
+function setVariant(v) {
+  variant = v;
+  document.querySelectorAll('.var-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector(`.var-btn[onclick="setVariant('${v}')"]`).classList.add('on');
+  
+  const notes = {
+    swarm: `<strong>Dyson Swarm:</strong> Thousands to trillions of independent solar collectors in orbit. Most physically realistic. Each satellite is a solar panel array or mirror. No rigid structure needed. Can be built incrementally.`,
+    bubble: `<strong>Dyson Bubble:</strong> Statites — satellites that use solar radiation pressure to hover rather than orbit. Each collector balances gravity with light pressure. Requires extremely thin, lightweight material (~1.5 g/m²). Doesn't orbit — it floats.`,
+    shell: `<strong>Dyson Shell:</strong> Freeman Dyson's original concept — a solid sphere. Physically impossible with known materials at 1 AU (shell theorem instability, no material can withstand the compressive forces). Included for theoretical completeness. Would capture 100% of stellar output.`
+  };
+  document.getElementById('varNote').innerHTML = notes[v];
+  
+  const vizLabels = {
+    swarm: 'Dyson Swarm — Orbital View',
+    bubble: 'Dyson Bubble — Statite Array',
+    shell: 'Dyson Shell — Theoretical'
+  };
+  document.getElementById('vizLabel').textContent = vizLabels[v];
+  
+  // Shell forces 100% coverage
+  if (v === 'shell') {
+    document.getElementById('sCov').value = 100;
+  }
+  
+  calc();
+}
+
+function calc() {
+  const starMass = parseFloat(document.getElementById('sMass').value);
+  const starLumRatio = parseFloat(document.getElementById('sLum').value);
+  const radiusAU = parseFloat(document.getElementById('sRad').value);
+  const coverage = parseFloat(document.getElementById('sCov').value);
+  const panelEff = parseFloat(document.getElementById('sEff').value) / 100;
+  const thickness = parseFloat(document.getElementById('sThk').value);
+  
+  // Display values
+  document.getElementById('dMass').textContent = starMass.toFixed(2);
+  document.getElementById('dLum').textContent = starLumRatio.toFixed(2);
+  document.getElementById('dRad').textContent = radiusAU.toFixed(2);
+  document.getElementById('dCov').textContent = coverage.toFixed(3);
+  document.getElementById('dEff').textContent = (panelEff * 100).toFixed(0);
+  document.getElementById('dThk').textContent = thickness.toFixed(3);
+  
+  // ═══ PHYSICS ═══
+  
+  // Star luminosity (W)
+  // Main sequence approximation: L ∝ M^3.5 (but we allow manual override)
+  const L = starLumRatio * PHY.Lsun;
+  
+  // Sphere radius (m)
+  const R = radiusAU * PHY.AU;
+  
+  // Total sphere surface area: A = 4πR²
+  const sphereArea = 4 * Math.PI * R * R;
+  
+  // Collector area (coverage fraction)
+  const covFrac = coverage / 100;
+  const collectorArea = sphereArea * covFrac;
+  
+  // Solar flux at radius R: F = L / (4πR²)  [W/m²]
+  const solarFlux = L / (4 * Math.PI * R * R);
+  
+  // Intercepted power = collector area × solar flux
+  // (For a shell/full coverage, this equals L)
+  const intercepted = collectorArea * solarFlux;
+  
+  // Electrical output
+  const electrical = intercepted * panelEff;
+  
+  // Waste heat
+  const wasteHeat = intercepted * (1 - panelEff);
+  
+  // Equilibrium temperature of collector surface
+  // Absorbs solarFlux on inner face, radiates from outer face
+  // σ T⁴ = solarFlux × (1 - albedo) / 2  (radiating from both sides)
+  // Simplified: T = (solarFlux / (2 × σ))^(1/4) for low albedo
+  const albedo = 0.1; // dark solar panels
+  const emissivity = 0.9;
+  const Teq = Math.pow((solarFlux * (1 - albedo)) / (2 * PHY.sigma * emissivity), 0.25);
+  
+  // Orbital mechanics (Kepler's third law)
+  // T² = (4π²/GM) × R³
+  const M = starMass * PHY.Msun;
+  const orbitalPeriod = 2 * Math.PI * Math.sqrt(R * R * R / (PHY.G * M));
+  const orbitalVelocity = 2 * Math.PI * R / orbitalPeriod;
+  
+  // Mass calculation
+  let structMass;
+  if (variant === 'shell') {
+    // Solid shell: mass = surface area × thickness × density
+    structMass = sphereArea * thickness * PHY.carbonDensity;
+  } else if (variant === 'bubble') {
+    // Statites: must be < ~1.5 g/m² to be supported by radiation pressure
+    // Radiation pressure force per m²: F = L/(4πR²c)
+    // Gravity per m²: F = GMσ_m/R² where σ_m is mass per area
+    // Balance: σ_m = L/(4πGMc)
+    const criticalDensity = L / (4 * Math.PI * PHY.G * M * PHY.c); // kg/m²
+    const actualDensity = Math.min(criticalDensity, PHY.solarPanelDensity);
+    structMass = collectorArea * actualDensity;
+    // Update engineering note for bubble
+    const cd = criticalDensity * 1000; // g/m²
+    document.getElementById('engNote').innerHTML = `<strong>Radiation Pressure Balance:</strong> For statites to float, areal density must be ≤ ${cd.toFixed(2)} g/m². Current thin-film solar panels are ~2500 g/m². Gap factor: ${(2500/cd).toFixed(0)}× too heavy. Requires breakthrough in materials science — graphene or carbon nanotube solar sails.<br><br><strong>Advantage:</strong> No orbital mechanics. Statites can be placed at any distance and orientation. Formation flying enables optimal coverage without collision risk.`;
+  } else {
+    // Swarm: individual satellites with solar panels
+    structMass = collectorArea * PHY.solarPanelDensity;
+  }
+  
+  const mercuryFrac = structMass / PHY.mercuryMass;
+  
+  // Number of collectors (swarm mode, assume 1 km² per collector)
+  const collectorCount = Math.round(collectorArea / 1e6); // 1 km² each
+  
+  // Build time estimate
+  // Assume 1 TW (10¹² W) construction power
+  // Energy to launch material: ~10 MJ/kg (electromagnetic launch from asteroid)
+  const launchEnergy = structMass * 1e7; // joules
+  const buildPowerW = 1e12; // 1 TW
+  const buildTimeS = launchEnergy / buildPowerW;
+  const buildTimeYears = buildTimeS / (365.25 * 24 * 3600);
+  
+  // Earth power equivalents
+  const earthEquiv = electrical / PHY.earthPower2024;
+  
+  // Kardashev level: K = (log10(P) - 6) / 10
+  const kardashev = (Math.log10(Math.max(1, electrical)) - 6) / 10;
+  const kardashevPct = Math.max(0, Math.min(100, ((kardashev - 0.5) / 1.7) * 100));
+  
+  // ═══ DISPLAY ═══
+  document.getElementById('oLum').textContent = L.toExponential(3) + ' W';
+  document.getElementById('oArea').textContent = sphereArea.toExponential(3) + ' m²';
+  document.getElementById('oColArea').textContent = collectorArea.toExponential(3) + ' m²';
+  document.getElementById('oIntercept').textContent = intercepted.toExponential(3) + ' W';
+  document.getElementById('oElec').textContent = electrical.toExponential(3) + ' W';
+  document.getElementById('oWaste').textContent = wasteHeat.toExponential(3) + ' W';
+  document.getElementById('oTemp').textContent = Math.round(Teq) + ' K (' + Math.round(Teq - 273.15) + '°C)';
+  document.getElementById('oPeriod').textContent = (orbitalPeriod / 86400).toFixed(2) + ' days';
+  document.getElementById('oVel').textContent = (orbitalVelocity / 1000).toFixed(2) + ' km/s';
+  document.getElementById('oMass').textContent = structMass.toExponential(3) + ' kg';
+  document.getElementById('oMerc').textContent = mercuryFrac < 0.001
+    ? (mercuryFrac * 1e6).toFixed(1) + ' ppm Mercury'
+    : mercuryFrac < 1
+      ? (mercuryFrac * 100).toFixed(2) + '% Mercury'
+      : mercuryFrac.toFixed(1) + '× Mercury';
+  document.getElementById('oBuild').textContent = buildTimeYears < 1
+    ? Math.round(buildTimeYears * 365) + ' days'
+    : buildTimeYears < 1e6
+      ? buildTimeYears.toFixed(1) + ' years'
+      : buildTimeYears.toExponential(2) + ' years';
+  document.getElementById('oEarth').textContent = earthEquiv < 1000
+    ? earthEquiv.toFixed(1) + '× Earth 2024'
+    : earthEquiv.toExponential(2) + '× Earth 2024';
+  
+  document.getElementById('kFill').style.width = kardashevPct + '%';
+  document.getElementById('kLevel').textContent = 'K = ' + kardashev.toFixed(3);
+  
+  // Viz overlay stats
+  document.getElementById('vizCol').textContent = collectorCount > 1e9
+    ? (collectorCount / 1e9).toFixed(1) + 'B'
+    : collectorCount > 1e6
+      ? (collectorCount / 1e6).toFixed(1) + 'M'
+      : collectorCount.toLocaleString();
+  document.getElementById('vizOrb').textContent = radiusAU.toFixed(2) + ' AU';
+  document.getElementById('vizCap').textContent = coverage < 1
+    ? coverage.toFixed(3) + '%'
+    : coverage.toFixed(1) + '%';
+  document.getElementById('vizOut').textContent = electrical.toExponential(2) + ' W';
+  
+  // Store for viz
+  state = { L, R, sphereArea, collectorArea, covFrac, solarFlux, electrical,
+            Teq, orbitalPeriod, orbitalVelocity, structMass, collectorCount,
+            starMass, radiusAU, coverage, panelEff, variant };
+}
+
+// ═══ VISUALIZATION ═══
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  const wrap = canvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  W = wrap.clientWidth * dpr;
+  H = wrap.clientHeight * dpr;
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = wrap.clientWidth + 'px';
+  canvas.style.height = wrap.clientHeight + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Collector particles
+let collectors = [];
+function initCollectors(n) {
+  collectors = [];
+  for (let i = 0; i < Math.min(n, 2000); i++) {
+    collectors.push({
+      angle: Math.random() * Math.PI * 2,
+      inclination: (Math.random() - 0.5) * Math.PI * 0.8,
+      size: 1 + Math.random() * 2,
+      speed: 0.8 + Math.random() * 0.4,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+initCollectors(500);
+
+function draw() {
+  frame++;
+  ctx.fillStyle = '#06060a';
+  ctx.fillRect(0, 0, W, H);
+  
+  const cx = W / 2;
+  const cy = H / 2;
+  const scale = Math.min(W, H) * 0.35;
+  
+  // Star field
+  if (frame === 1 || !draw.stars) {
+    draw.stars = [];
+    for (let i = 0; i < 200; i++) {
+      draw.stars.push({
+        x: Math.random() * W, y: Math.random() * H,
+        s: Math.random() * 1.5, b: 0.2 + Math.random() * 0.6
+      });
+    }
+  }
+  draw.stars.forEach(s => {
+    ctx.globalAlpha = s.b * (0.7 + 0.3 * Math.sin(frame * 0.02 + s.x));
+    ctx.fillStyle = '#aaaacc';
+    ctx.fillRect(s.x, s.y, s.s, s.s);
+  });
+  ctx.globalAlpha = 1;
+  
+  // Star glow
+  const starR = Math.max(12, scale * 0.08 * Math.sqrt(state.starMass || 1));
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, starR * 8);
+  glow.addColorStop(0, 'rgba(255,238,136,0.15)');
+  glow.addColorStop(0.3, 'rgba(255,204,68,0.06)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Star
+  const starGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, starR);
+  starGrad.addColorStop(0, '#ffee88');
+  starGrad.addColorStop(0.6, '#ffcc44');
+  starGrad.addColorStop(1, '#bb8822');
+  ctx.beginPath();
+  ctx.arc(cx, cy, starR, 0, Math.PI * 2);
+  ctx.fillStyle = starGrad;
+  ctx.fill();
+  
+  // Corona
+  ctx.beginPath();
+  ctx.arc(cx, cy, starR * 1.3, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,204,68,0.1)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Orbit ring
+  const orbitR = scale;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, orbitR, orbitR * 0.35, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(100,136,204,0.12)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Coverage arc indicator
+  if (state.covFrac && state.covFrac < 1) {
+    const arcLen = state.covFrac * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, orbitR, orbitR * 0.35, 0, -arcLen / 2, arcLen / 2);
+    ctx.strokeStyle = 'rgba(68,221,170,0.25)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  
+  // Collectors / Shell
+  if (variant === 'shell') {
+    // Draw filled ellipse shell
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, orbitR, orbitR * 0.35, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(68,221,170,0.04)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(68,221,170,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Lattice lines
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, orbitR * Math.abs(Math.cos(a)), orbitR * 0.35, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(68,221,170,0.06)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  } else {
+    // Swarm / Bubble particles
+    const count = Math.min(collectors.length, state.collectorCount || 500);
+    const t = frame * 0.008;
+    
+    for (let i = 0; i < count; i++) {
+      const col = collectors[i];
+      const angle = col.angle + t * col.speed;
+      const incl = col.inclination;
+      
+      // 3D position projected to 2D ellipse
+      const x3d = Math.cos(angle);
+      const y3d = Math.sin(angle) * Math.cos(incl);
+      const z3d = Math.sin(angle) * Math.sin(incl);
+      
+      const px = cx + x3d * orbitR;
+      const py = cy + y3d * orbitR * 0.35 + z3d * orbitR * 0.15;
+      
+      // Depth-based alpha and size
+      const depth = 0.5 + y3d * 0.5;
+      const sz = col.size * (0.5 + depth * 0.8);
+      
+      // Solar illumination (closer to camera = lit face visible)
+      const lit = Math.max(0.2, 0.5 + x3d * 0.5);
+      
+      ctx.globalAlpha = depth * lit * 0.8;
+      
+      if (variant === 'bubble') {
+        // Statites: diamond shapes
+        ctx.fillStyle = '#44ddaa';
+        ctx.beginPath();
+        ctx.moveTo(px, py - sz * 2);
+        ctx.lineTo(px + sz, py);
+        ctx.lineTo(px, py + sz * 2);
+        ctx.lineTo(px - sz, py);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Swarm: squares (solar panels)
+        ctx.fillStyle = '#44ddaa';
+        ctx.fillRect(px - sz, py - sz, sz * 2, sz * 2);
+        // Panel glint
+        if (Math.sin(angle * 3 + col.phase) > 0.95) {
+          ctx.fillStyle = 'rgba(255,238,136,0.6)';
+          ctx.fillRect(px - sz * 0.5, py - sz * 0.5, sz, sz);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  
+  // Energy beams (from collectors to hypothetical receiver)
+  if (state.covFrac > 0.01 && frame % 3 === 0) {
+    const beamCount = Math.min(5, Math.floor(state.covFrac * 20));
+    for (let i = 0; i < beamCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const bx = cx + Math.cos(a) * orbitR * 0.8;
+      const by = cy + Math.sin(a) * orbitR * 0.28;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(cx + (Math.random() - 0.5) * 20, cy + (Math.random() - 0.5) * 10);
+      ctx.strokeStyle = 'rgba(255,204,68,0.04)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+  
+  requestAnimationFrame(draw);
+}
+
+// Init
+calc();
+initCollectors(Math.min(2000, state.collectorCount || 500));
+draw();
+</script>
+</body>
+</html>

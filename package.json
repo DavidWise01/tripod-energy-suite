@@ -1,0 +1,29 @@
+{
+  "name": "tripod-energy-suite",
+  "version": "1.0.0",
+  "description": "Civilization-scale energy simulators. Black hole extraction (Hawking/Penrose/BZ, Kerr metric) + Dyson sphere (Swarm/Bubble/Shell, Kardashev scale). Pure Canvas + Web Audio. No deps.",
+  "author": "David Lee Wise (ROOT0) / TriPod LLC",
+  "license": "CC-BY-ND-4.0",
+  "homepage": "https://github.com/DavidWise01/tripod-energy-suite",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DavidWise01/tripod-energy-suite.git"
+  },
+  "keywords": [
+    "black-hole",
+    "hawking-radiation",
+    "penrose-process",
+    "blandford-znajek",
+    "kerr-metric",
+    "dyson-sphere",
+    "kardashev-scale",
+    "energy",
+    "physics",
+    "simulation",
+    "canvas",
+    "web-audio",
+    "no-dependencies",
+    "tripod",
+    "root0"
+  ]
+}

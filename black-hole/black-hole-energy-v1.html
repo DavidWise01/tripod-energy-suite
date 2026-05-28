@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLACK HOLE ENERGY EXTRACTOR // TriPod</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+  :root {
+    --void: #0a0a0a;
+    --deep: #111111;
+    --earth-dark: #1a1a18;
+    --earth: #2d2b26;
+    --earth-mid: #4a4639;
+    --earth-light: #7a7466;
+    --sand: #b8af90;
+    --bone: #d4c9b0;
+    --ember: #c45a2d;
+    --ember-glow: #e8723a;
+    --hawking: #38b6a0;
+    --hawking-dim: #1a6b5e;
+    --ergosphere: #c4952d;
+    --text: #9a9488;
+    --text-bright: #d4cfc6;
+    --text-dim: #5a5650;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── GRAIN OVERLAY ─── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── LAYOUT ─── */
+  .shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 800px) {
+    .shell { grid-template-columns: 1fr; padding: 1rem; }
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--earth);
+    padding-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: var(--text-bright);
+    letter-spacing: 0.02em;
+  }
+
+  .header h1 span { color: var(--ember); }
+
+  .header .tag {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+  }
+
+  /* ─── BLACK HOLE VISUALIZATION ─── */
+  .bh-container {
+    aspect-ratio: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 50%, var(--void) 0%, var(--deep) 40%, var(--earth-dark) 100%);
+    border: 1px solid var(--earth);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bh-canvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+  }
+
+  .bh-stats {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  .bh-stats .val { color: var(--hawking); font-weight: 600; }
+
+  /* ─── CONTROL PANEL ─── */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .panel {
+    background: var(--deep);
+    border: 1px solid var(--earth);
+    border-radius: 4px;
+    padding: 1.25rem;
+  }
+
+  .panel-title {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-title .indicator {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.5s;
+  }
+
+  .panel-title .indicator.active { background: var(--hawking); box-shadow: 0 0 8px var(--hawking-dim); }
+
+  /* ─── EXTRACTION METHODS ─── */
+  .methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .method-btn {
+    background: var(--earth-dark);
+    border: 1px solid var(--earth);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: left;
+    border-radius: 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .method-btn:hover {
+    border-color: var(--ember);
+    color: var(--text-bright);
+    background: var(--earth);
+  }
+
+  .method-btn.active {
+    border-color: var(--hawking);
+    color: var(--hawking);
+    background: rgba(56, 182, 160, 0.05);
+  }
+
+  .method-btn .yield {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+  }
+
+  .method-btn.active .yield { color: var(--hawking-dim); }
+
+  /* ─── SLIDERS ─── */
+  .slider-group { margin-bottom: 1rem; }
+  .slider-group:last-child { margin-bottom: 0; }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.5rem;
+  }
+
+  .slider-label .val { color: var(--ember); font-weight: 500; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--earth);
+    outline: none;
+    border-radius: 1px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    background: var(--ember);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 10px rgba(196, 90, 45, 0.5);
+  }
+
+  /* ─── ENERGY OUTPUT ─── */
+  .output-bar {
+    height: 3px;
+    background: var(--earth);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.75rem;
+  }
+
+  .output-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--hawking-dim), var(--hawking), var(--ember-glow));
+    border-radius: 2px;
+    transition: width 0.8s ease-out;
+  }
+
+  /* ─── ENERGY READOUT ─── */
+  .readout {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 800px) {
+    .readout { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .metric {
+    background: var(--deep);
+    border: 1px solid var(--earth);
+    border-radius: 4px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .metric .label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .metric .value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 2rem;
+    color: var(--text-bright);
+    line-height: 1;
+  }
+
+  .metric .unit {
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-top: 0.3rem;
+  }
+
+  .metric.highlight .value { color: var(--hawking); }
+  .metric.ember .value { color: var(--ember); }
+
+  /* ─── LOG ─── */
+  .log-panel {
+    grid-column: 1 / -1;
+    background: var(--deep);
+    border: 1px solid var(--earth);
+    border-radius: 4px;
+    padding: 1.25rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .log-panel::-webkit-scrollbar { width: 4px; }
+  .log-panel::-webkit-scrollbar-track { background: var(--deep); }
+  .log-panel::-webkit-scrollbar-thumb { background: var(--earth); border-radius: 2px; }
+
+  .log-entry {
+    font-size: 0.65rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    opacity: 0;
+    animation: logIn 0.3s forwards;
+  }
+
+  .log-entry .ts { color: var(--earth-mid); margin-right: 0.5rem; }
+  .log-entry .evt { color: var(--text); }
+  .log-entry .hawking { color: var(--hawking); }
+  .log-entry .ember { color: var(--ember); }
+
+  @keyframes logIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── EXTRACT BUTTON ─── */
+  .extract-btn {
+    grid-column: 1 / -1;
+    background: transparent;
+    border: 1px solid var(--ember);
+    color: var(--ember);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .extract-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(196, 90, 45, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .extract-btn:hover {
+    background: rgba(196, 90, 45, 0.08);
+    box-shadow: 0 0 30px rgba(196, 90, 45, 0.1);
+  }
+
+  .extract-btn:hover::before { transform: translateX(100%); }
+
+  .extract-btn.extracting {
+    border-color: var(--hawking);
+    color: var(--hawking);
+    pointer-events: none;
+  }
+
+  /* ─── FOOTER ─── */
+  .footer {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding-top: 1rem;
+    border-top: 1px solid var(--earth);
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="header">
+    <h1>Black Hole <span>Energy</span> Extractor</h1>
+    <div class="tag">TriPod Systems // TOPH Framework // Gravity Well Engine</div>
+  </div>
+
+  <!-- VISUALIZATION -->
+  <div class="bh-container">
+    <canvas class="bh-canvas" id="bhCanvas"></canvas>
+    <div class="bh-stats">
+      <span>MASS: <span class="val" id="massRead">1.0</span> M☉</span>
+      <span>SPIN: <span class="val" id="spinRead">0.0</span> a/M</span>
+      <span>TEMP: <span class="val" id="tempRead">0.0</span> nK</span>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="panel">
+      <div class="panel-title">
+        Extraction Method
+        <div class="indicator" id="methodIndicator"></div>
+      </div>
+      <div class="methods">
+        <button class="method-btn active" data-method="hawking" onclick="setMethod(this)">
+          Hawking Radiation <span class="yield">slow // steady</span>
+        </button>
+        <button class="method-btn" data-method="penrose" onclick="setMethod(this)">
+          Penrose Process <span class="yield">burst // ergosphere</span>
+        </button>
+        <button class="method-btn" data-method="superradiance" onclick="setMethod(this)">
+          Superradiant Scatter <span class="yield">amplify // reflect</span>
+        </button>
+        <button class="method-btn" data-method="bz" onclick="setMethod(this)">
+          Blandford-Znajek <span class="yield">magnetic // jet</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Parameters</div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Black Hole Mass</span>
+          <span class="val" id="massVal">1.0 M☉</span>
+        </div>
+        <input type="range" id="mass" min="0.1" max="10" step="0.1" value="1" oninput="updateParams()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Spin Parameter</span>
+          <span class="val" id="spinVal">0.50 a/M</span>
+        </div>
+        <input type="range" id="spin" min="0" max="0.998" step="0.002" value="0.5" oninput="updateParams()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Extraction Intensity</span>
+          <span class="val" id="intensityVal">50%</span>
+        </div>
+        <input type="range" id="intensity" min="1" max="100" step="1" value="50" oninput="updateParams()">
+      </div>
+      <div class="output-bar">
+        <div class="output-fill" id="outputFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- READOUT -->
+  <div class="readout">
+    <div class="metric highlight">
+      <div class="label">Energy Yield</div>
+      <div class="value" id="energyYield">0.00</div>
+      <div class="unit">× 10⁴⁴ J</div>
+    </div>
+    <div class="metric">
+      <div class="label">Efficiency</div>
+      <div class="value" id="efficiency">0.0</div>
+      <div class="unit">% mc²</div>
+    </div>
+    <div class="metric ember">
+      <div class="label">Total Extracted</div>
+      <div class="value" id="totalExtracted">0</div>
+      <div class="unit">qubit-joules</div>
+    </div>
+    <div class="metric">
+      <div class="label">Entropy Delta</div>
+      <div class="value" id="entropyDelta">0.00</div>
+      <div class="unit">Δ S/k</div>
+    </div>
+  </div>
+
+  <!-- EXTRACT -->
+  <button class="extract-btn" id="extractBtn" onclick="extract()">
+    ▸ Begin Extraction Cycle
+  </button>
+
+  <!-- LOG -->
+  <div class="log-panel" id="logPanel">
+    <div class="log-entry"><span class="ts">[00:00:00]</span> <span class="evt">GRAVITY WELL ENGINE initialized.</span></div>
+    <div class="log-entry"><span class="ts">[00:00:00]</span> <span class="evt">Awaiting extraction parameters...</span></div>
+  </div>
+
+  <div class="footer">TriPod IP // Anchor × Bubble × Gravity Well // World = Family</div>
+</div>
+
+<script>
+// ─── STATE ───
+const state = {
+  method: 'hawking',
+  mass: 1.0,
+  spin: 0.5,
+  intensity: 50,
+  totalEnergy: 0,
+  extracting: false,
+  cycle: 0
+};
+
+// ─── CANVAS SETUP ───
+const canvas = document.getElementById('bhCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let time = 0;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── PARTICLE SYSTEM ───
+class Particle {
+  constructor(type) {
+    const cx = canvas.width / (2 * devicePixelRatio);
+    const cy = canvas.height / (2 * devicePixelRatio);
+    this.type = type; // 'accretion', 'hawking', 'jet'
+
+    if (type === 'accretion') {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 60 + Math.random() * 120;
+      this.x = cx + Math.cos(angle) * dist;
+      this.y = cy + Math.sin(angle) * dist;
+      this.angle = angle;
+      this.dist = dist;
+      this.speed = (0.005 + Math.random() * 0.01) * (1 + state.spin);
+      this.life = 1;
+      this.decay = 0.001 + Math.random() * 0.002;
+      this.size = 1 + Math.random() * 2;
+    } else if (type === 'hawking') {
+      const angle = Math.random() * Math.PI * 2;
+      this.x = cx + Math.cos(angle) * 25;
+      this.y = cy + Math.sin(angle) * 25;
+      this.vx = Math.cos(angle) * (0.5 + Math.random() * 1.5);
+      this.vy = Math.sin(angle) * (0.5 + Math.random() * 1.5);
+      this.life = 1;
+      this.decay = 0.008 + Math.random() * 0.01;
+      this.size = 1 + Math.random();
+    } else if (type === 'jet') {
+      const dir = Math.random() > 0.5 ? -1 : 1;
+      this.x = cx + (Math.random() - 0.5) * 6;
+      this.y = cy;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = dir * (2 + Math.random() * 3);
+      this.life = 1;
+      this.decay = 0.01 + Math.random() * 0.015;
+      this.size = 1 + Math.random();
+    }
+  }
+
+  update(cx, cy) {
+    if (this.type === 'accretion') {
+      this.angle += this.speed;
+      this.dist -= 0.15 * state.intensity / 50;
+      this.x = cx + Math.cos(this.angle) * this.dist;
+      this.y = cy + Math.sin(this.angle) * this.dist * (0.3 + state.spin * 0.3);
+      if (this.dist < 20) this.life = 0;
+    } else {
+      this.x += this.vx;
+      this.y += this.vy;
+    }
+    this.life -= this.decay;
+  }
+}
+
+function spawnParticles() {
+  const rate = state.extracting ? state.intensity / 10 : 2;
+  if (Math.random() < rate * 0.3) particles.push(new Particle('accretion'));
+
+  if (state.extracting) {
+    if (state.method === 'hawking' && Math.random() < 0.15 * state.intensity / 50) {
+      particles.push(new Particle('hawking'));
+    }
+    if ((state.method === 'bz' || state.method === 'penrose') && Math.random() < 0.2 * state.intensity / 50) {
+      particles.push(new Particle('jet'));
+    }
+    if (state.method === 'superradiance' && Math.random() < 0.25 * state.intensity / 50) {
+      particles.push(new Particle('hawking'));
+    }
+  }
+}
+
+function drawBlackHole() {
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Ergosphere glow
+  const ergoSize = 40 + state.spin * 30;
+  const ergoGrad = ctx.createRadialGradient(cx, cy, 15, cx, cy, ergoSize);
+  ergoGrad.addColorStop(0, 'rgba(0,0,0,1)');
+  ergoGrad.addColorStop(0.4, 'rgba(196,149,45,0.05)');
+  ergoGrad.addColorStop(0.7, state.extracting ? 'rgba(56,182,160,0.08)' : 'rgba(196,149,45,0.02)');
+  ergoGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = ergoGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Event horizon
+  ctx.beginPath();
+  ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+  ctx.fillStyle = '#000';
+  ctx.fill();
+
+  // Photon ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+  ctx.strokeStyle = state.extracting
+    ? `rgba(56,182,160,${0.15 + Math.sin(time * 3) * 0.1})`
+    : 'rgba(180,169,144,0.1)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Particles
+  spawnParticles();
+  particles = particles.filter(p => p.life > 0.01);
+
+  for (const p of particles) {
+    p.update(cx, cy);
+    if (p.life <= 0) continue;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(0, p.size * p.life), 0, Math.PI * 2);
+
+    if (p.type === 'accretion') {
+      ctx.fillStyle = `rgba(196,149,45,${p.life * 0.4})`;
+    } else if (p.type === 'hawking') {
+      ctx.fillStyle = `rgba(56,182,160,${p.life * 0.7})`;
+    } else {
+      ctx.fillStyle = `rgba(232,114,58,${p.life * 0.6})`;
+    }
+    ctx.fill();
+  }
+
+  time += 0.016;
+  requestAnimationFrame(drawBlackHole);
+}
+
+drawBlackHole();
+
+// ─── METHODS ───
+const methodData = {
+  hawking: { effBase: 0.001, yieldMult: 0.1, label: 'HAWKING RADIATION' },
+  penrose: { effBase: 20.7, yieldMult: 1.8, label: 'PENROSE PROCESS' },
+  superradiance: { effBase: 4.8, yieldMult: 0.9, label: 'SUPERRADIANT SCATTERING' },
+  bz: { effBase: 15.2, yieldMult: 2.4, label: 'BLANDFORD-ZNAJEK' }
+};
+
+function setMethod(btn) {
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.method = btn.dataset.method;
+  updateReadout();
+  log(`Method set: <span class="hawking">${methodData[state.method].label}</span>`);
+}
+
+function updateParams() {
+  state.mass = parseFloat(document.getElementById('mass').value);
+  state.spin = parseFloat(document.getElementById('spin').value);
+  state.intensity = parseInt(document.getElementById('intensity').value);
+
+  document.getElementById('massVal').textContent = state.mass.toFixed(1) + ' M☉';
+  document.getElementById('spinVal').textContent = state.spin.toFixed(3) + ' a/M';
+  document.getElementById('intensityVal').textContent = state.intensity + '%';
+
+  document.getElementById('massRead').textContent = state.mass.toFixed(1);
+  document.getElementById('spinRead').textContent = state.spin.toFixed(2);
+
+  // Hawking temp inversely proportional to mass
+  const temp = (6.17e-8 / state.mass).toFixed(2);
+  document.getElementById('tempRead').textContent = temp;
+
+  document.getElementById('outputFill').style.width = state.intensity + '%';
+  updateReadout();
+}
+
+function updateReadout() {
+  const m = methodData[state.method];
+  const spinBonus = 1 + state.spin * 2;
+  const eff = m.effBase * spinBonus * (state.intensity / 50);
+  const energy = m.yieldMult * state.mass * spinBonus * (state.intensity / 50);
+
+  document.getElementById('efficiency').textContent = Math.min(eff, 42.0).toFixed(1);
+  document.getElementById('energyYield').textContent = energy.toFixed(2);
+  document.getElementById('entropyDelta').textContent = (state.mass * state.spin * 0.73).toFixed(2);
+}
+
+// ─── EXTRACTION ───
+let extractInterval = null;
+
+function extract() {
+  const btn = document.getElementById('extractBtn');
+
+  if (state.extracting) {
+    state.extracting = false;
+    btn.classList.remove('extracting');
+    btn.textContent = '▸ Begin Extraction Cycle';
+    clearInterval(extractInterval);
+    document.getElementById('methodIndicator').classList.remove('active');
+    log('Extraction cycle <span class="ember">HALTED</span>.');
+    return;
+  }
+
+  state.extracting = true;
+  state.cycle++;
+  btn.classList.add('extracting');
+  btn.textContent = '■ Stop Extraction';
+  document.getElementById('methodIndicator').classList.add('active');
+
+  const m = methodData[state.method];
+  log(`Cycle <span class="hawking">#${state.cycle}</span> initiated — ${m.label}`);
+
+  extractInterval = setInterval(() => {
+    if (!state.extracting) return;
+
+    const spinBonus = 1 + state.spin * 2;
+    const tick = m.yieldMult * state.mass * spinBonus * (state.intensity / 100) * 0.1;
+    state.totalEnergy += tick;
+
+    document.getElementById('totalExtracted').textContent = state.totalEnergy.toFixed(1);
+    updateReadout();
+
+    // Random events
+    const r = Math.random();
+    if (r < 0.03) {
+      log(`Ergosphere boundary fluctuation detected at <span class="hawking">${(state.spin * 2.95).toFixed(1)}r_s</span>`);
+    } else if (r < 0.05) {
+      log(`Qubit collapse: <span class="ember">${tick.toFixed(3)}</span> QJ harvested`);
+    } else if (r < 0.06 && state.spin > 0.8) {
+      log(`⚠ Frame-dragging exceeds <span class="ember">threshold</span> — TOPH boundary stable`);
+    }
+  }, 200);
+}
+
+// ─── LOG ───
+function log(msg) {
+  const panel = document.getElementById('logPanel');
+  const now = new Date();
+  const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':');
+
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="ts">[${ts}]</span> <span class="evt">${msg}</span>`;
+  panel.appendChild(entry);
+  panel.scrollTop = panel.scrollHeight;
+
+  // Keep log manageable
+  while (panel.children.length > 50) panel.removeChild(panel.firstChild);
+}
+
+// Init
+updateParams();
+log('System ready. Select method and parameters.');
+log('The void yields to those who understand <span class="hawking">compression</span>.');
+</script>
+
+</body>
+</html>
