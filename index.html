@@ -356,6 +356,31 @@ footer a { color: var(--amber); text-decoration: none; }
     <div class="tc-open">Open Sphere</div>
   </a>
 
+  <a href="antimatter/antimatter-engine.html" class="tool-card" style="border-left:1px solid var(--frame)">
+    <style>
+      .tool-card.am::before{background:#cc44ff}
+      .tool-card.am:hover .tc-open{color:#cc44ff}
+    </style>
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:#cc44ff;opacity:0;transition:opacity .2s" class="am-bar"></div>
+    <div class="tc-tier">Storage &amp; Propulsion Scale · New</div>
+    <div class="tc-name" style="color:#cc44ff">Antimatter <span style="color:#e8e2f8">Engine</span></div>
+    <div class="tc-scale">10¹⁴ – 10¹⁷ J/kg · highest energy density known</div>
+    <div class="tc-desc">
+      Not a source — a storage medium. p + p̄ annihilation as propulsion.
+      Penning trap confinement, photon / pion / thermal rocket modes.
+      Tsiolkovsky Δv with relativistic correction. Trip times to destinations.
+      Production efficiency reality check.
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">Photon Rocket</span>
+      <span class="tc-tag">Pion Exhaust</span>
+      <span class="tc-tag">Penning Trap</span>
+      <span class="tc-tag">Tsiolkovsky Δv</span>
+      <span class="tc-tag">Destinations</span>
+    </div>
+    <div class="tc-open" style="color:#6a6488">Open Engine</div>
+  </a>
+
   <a href="black-hole/black-hole-energy-v2.html" class="tool-card bh">
     <div class="tc-tier">Tier 4 · Black Hole Scale</div>
     <div class="tc-name">Black Hole <span class="bh">Extractor</span></div>
@@ -387,6 +412,7 @@ footer a { color: var(--amber); text-decoration: none; }
   <div class="st-row"><span class="st-w">10²⁶ W</span><span class="st-src">Solar luminosity — full stellar capture</span><span class="st-tool link">↗ Dyson Sphere</span></div>
   <div class="st-row"><span class="st-w">10²⁶ W</span><span class="st-src">Kardashev Type 2 — stellar civilization</span><span class="st-tool link">↗ Dyson Sphere</span></div>
   <div class="st-row"><span class="st-w">10³⁶ W</span><span class="st-src">Kardashev Type 3 — galactic civilization</span><span class="st-tool">—</span></div>
+  <div class="st-row"><span class="st-w">10¹⁷ J/kg</span><span class="st-src">Antimatter annihilation energy density — storage &amp; propulsion</span><span class="st-tool link">↗ Antimatter Engine</span></div>
   <div class="st-row"><span class="st-w">10³⁸ W</span><span class="st-src">Stellar-mass black hole (BZ process, a→1)</span><span class="st-tool link">↗ Black Hole</span></div>
   <div class="st-row"><span class="st-w">10⁴⁷ W</span><span class="st-src">Supermassive BH (10⁹ M☉, AGN / quasar regime)</span><span class="st-tool link">↗ Black Hole</span></div>
 </div>
@@ -459,6 +485,7 @@ const REFS = [
   { log: 9,  label: '1 GW',     sub: 'fusion reactor',      color: '#4488ff', tool: true },
   { log: 13, label: '10 TW',    sub: 'Earth civilization',   color: '#c4a35a' },
   { log: 16, label: '10 PW',    sub: 'Kardashev I',         color: '#b4b09a' },
+  { log: 17, label: '10¹⁷ J/kg', sub: 'antimatter · propulsion', color: '#cc44ff', tool: true },
   { log: 26, label: '3.8×10²⁶', sub: 'Dyson sphere · Sun',  color: '#ffcc44', tool: true },
   { log: 36, label: '10³⁶ W',   sub: 'Kardashev III',       color: '#b4b09a' },
   { log: 40, label: '10⁴⁰ W',   sub: 'stellar BH (BZ)',     color: '#38b6a0', tool: true },
@@ -470,6 +497,7 @@ const TOOLS = [
   { log: 9,  label: 'FUSION', color: '#4488ff',  href: 'fusion/fusion-reactor.html', y: 0.32 },
   { log: 26, label: 'DYSON',  color: '#ffcc44',  href: 'dyson-sphere/dyson-sphere.html', y: 0.52 },
   { log: 43, label: 'BLACK HOLE', color: '#38b6a0', href: 'black-hole/black-hole-energy-v2.html', y: 0.38 },
+  { log: 17, label: 'ANTIMATTER', color: '#cc44ff', href: 'antimatter/antimatter-engine.html', y: 0.68 },
 ];
 
 // Particles flowing along the scale
