@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUSION REACTOR // TriPod</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --void:      #06080e;
+  --deep:      #0c101a;
+  --shell:     #141824;
+  --frame:     #1c2232;
+  --mid:       #2a3348;
+  --dim:       #4a5a78;
+  --ash:       #7a8fa8;
+  --bone:      #c8d4e4;
+  --bright:    #e8f0f8;
+
+  --plasma-c:  #4488ff;   /* cool plasma — blue */
+  --plasma-h:  #ff8844;   /* hot plasma — orange */
+  --plasma-w:  #fff8e8;   /* white-hot core */
+  --field:     #44d4ff;   /* magnetic field lines */
+  --neutron:   #aaffaa;   /* neutron track */
+  --lawson-ok: #44cc88;   /* Lawson criterion met */
+  --lawson-no: #cc4444;   /* Lawson criterion unmet */
+  --gold:      #ffcc44;   /* energy output */
+  --ember:     #c45a2d;   /* accent */
+  --ember-g:   #e8723a;
+
+  --text:      #7a8fa8;
+  --text-b:    #c8d4e4;
+  --text-d:    #3a4a60;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  min-height: 100vh;
+}
+@media(max-width:860px){
+  .shell { grid-template-columns:1fr; padding:1rem; }
+}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.header {
+  grid-column: 1/-1;
+  border-bottom: 1px solid var(--frame);
+  padding-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.header h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--bright);
+  letter-spacing: 0.02em;
+}
+.header h1 span { color: var(--plasma-c); }
+.header .tag {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-d);
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* ── CANVAS CONTAINER ─────────────────────────────────────── */
+.reactor-wrap {
+  aspect-ratio: 1;
+  position: relative;
+  background: radial-gradient(ellipse at 50% 50%, #080d18 0%, var(--void) 80%);
+  border: 1px solid var(--frame);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.reactor-canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+.reactor-hud {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-d);
+  pointer-events: none;
+}
+.reactor-hud .val { color: var(--field); font-weight: 600; }
+.reactor-hud .val.hot { color: var(--plasma-h); }
+.reactor-hud .val.ok { color: var(--lawson-ok); }
+.reactor-hud .val.no { color: var(--lawson-no); }
+
+/* ── CONTROLS ─────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--deep);
+  border: 1px solid var(--frame);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+.panel-title {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-d);
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.indicator {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-d);
+  transition: all 0.5s;
+}
+.indicator.active {
+  background: var(--lawson-ok);
+  box-shadow: 0 0 8px var(--lawson-ok);
+}
+.indicator.critical {
+  background: var(--lawson-no);
+  box-shadow: 0 0 8px var(--lawson-no);
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── MODE SELECTOR ────────────────────────────────────────── */
+.mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.mode-btn {
+  background: var(--shell);
+  border: 1px solid var(--mid);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 0.65rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.mode-btn:hover { border-color: var(--field); color: var(--bright); }
+.mode-btn.active {
+  border-color: var(--plasma-c);
+  color: var(--plasma-c);
+  background: rgba(68,136,255,0.07);
+}
+
+/* ── FUEL SELECTOR ────────────────────────────────────────── */
+.fuel-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+.fuel-btn {
+  background: var(--shell);
+  border: 1px solid var(--mid);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  padding: 0.55rem 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px;
+  text-align: center;
+}
+.fuel-btn:hover { border-color: var(--gold); color: var(--bright); }
+.fuel-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(255,204,68,0.06);
+}
+.fuel-note {
+  font-size: 0.55rem;
+  color: var(--text-d);
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── SLIDERS ──────────────────────────────────────────────── */
+.slider-group { margin-bottom: 1rem; }
+.slider-group:last-child { margin-bottom: 0; }
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.5rem;
+}
+.slider-label .val { color: var(--plasma-c); font-weight: 500; }
+.slider-label .val.hot { color: var(--plasma-h); }
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--mid);
+  outline: none;
+  border-radius: 1px;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  background: var(--plasma-c);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px rgba(68,136,255,0.5);
+}
+
+/* ── IGNITE BUTTON ────────────────────────────────────────── */
+.ignite-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #0a1832 0%, #06100e 100%);
+  border: 1px solid var(--plasma-c);
+  color: var(--plasma-c);
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.ignite-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(68,136,255,0.08) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.ignite-btn:hover {
+  border-color: var(--plasma-w);
+  color: var(--plasma-w);
+  box-shadow: 0 0 24px rgba(68,136,255,0.2), inset 0 0 20px rgba(68,136,255,0.05);
+}
+.ignite-btn:hover::before { opacity: 1; }
+.ignite-btn.firing {
+  border-color: var(--plasma-h);
+  color: var(--plasma-h);
+  box-shadow: 0 0 30px rgba(255,136,68,0.35);
+  animation: fire-pulse 0.4s ease-in-out infinite;
+}
+@keyframes fire-pulse { 0%,100%{box-shadow:0 0 30px rgba(255,136,68,.35)} 50%{box-shadow:0 0 50px rgba(255,136,68,.55)} }
+
+/* ── METRICS ──────────────────────────────────────────────── */
+.readout {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+@media(max-width:900px){ .readout { grid-template-columns: repeat(3,1fr); } }
+@media(max-width:600px){ .readout { grid-template-columns: repeat(2,1fr); } }
+
+.metric {
+  background: var(--deep);
+  border: 1px solid var(--frame);
+  border-radius: 4px;
+  padding: 1rem;
+  text-align: center;
+}
+.metric .label {
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-d);
+  margin-bottom: 0.5rem;
+}
+.metric .value {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--bone);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.metric .value.ok   { color: var(--lawson-ok); }
+.metric .value.hot  { color: var(--plasma-h); }
+.metric .value.cold { color: var(--plasma-c); }
+.metric .value.gold { color: var(--gold); }
+.metric .unit {
+  font-size: 0.55rem;
+  color: var(--text-d);
+  margin-top: 0.35rem;
+  letter-spacing: 0.1em;
+}
+.metric .sub {
+  font-size: 0.58rem;
+  color: var(--text-d);
+  margin-top: 0.25rem;
+}
+
+/* ── LAWSON BAR ───────────────────────────────────────────── */
+.lawson-track {
+  height: 3px;
+  background: var(--mid);
+  border-radius: 2px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  position: relative;
+}
+.lawson-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  transition: width 0.8s ease-out, background 0.4s;
+  background: linear-gradient(90deg, var(--lawson-no), var(--lawson-ok));
+}
+.lawson-marker {
+  position: absolute;
+  top: 50%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 200%;
+  background: rgba(255,255,255,0.3);
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
+  <div class="header">
+    <div>
+      <div class="tag">TriPod Energy Suite · Tier 2 · Fusion Scale</div>
+      <h1>Fusion <span>Reactor</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="tag">D·T → ⁴He + n + 17.6 MeV</div>
+      <div class="tag">Lawson criterion: nτT &gt; 3×10²¹ m⁻³·s·keV</div>
+    </div>
+  </div>
+
+  <!-- ── CANVAS ─────────────────────────────────────────── -->
+  <div class="reactor-wrap">
+    <canvas id="rc" class="reactor-canvas"></canvas>
+    <div class="reactor-hud">
+      <div>Mode: <span class="val" id="hud-mode">TOKAMAK</span></div>
+      <div>T: <span class="val hot" id="hud-t">—</span></div>
+      <div>Lawson: <span class="val" id="hud-law">—</span></div>
+      <div>Q: <span class="val" id="hud-q">—</span></div>
+    </div>
+  </div>
+
+  <!-- ── CONTROLS ───────────────────────────────────────── -->
+  <div class="controls">
+
+    <!-- Mode -->
+    <div class="panel">
+      <div class="panel-title">
+        Configuration
+        <div class="indicator" id="main-indicator"></div>
+      </div>
+      <div class="mode-row">
+        <button class="mode-btn active" id="m-tok" onclick="setMode('tok')">Tokamak</button>
+        <button class="mode-btn"        id="m-icf" onclick="setMode('icf')">ICF</button>
+      </div>
+      <div class="fuel-row">
+        <button class="fuel-btn active" id="f-dt"   onclick="setFuel('dt')">D·T</button>
+        <button class="fuel-btn"        id="f-dd"   onclick="setFuel('dd')">D·D</button>
+        <button class="fuel-btn"        id="f-pb11" onclick="setFuel('pb11')">p·B¹¹</button>
+      </div>
+      <div class="fuel-note" id="fuel-note">
+        D+T → ⁴He (3.5 MeV) + n (14.1 MeV). Highest cross-section. Tritium breeding required.
+      </div>
+    </div>
+
+    <!-- Tokamak params -->
+    <div class="panel" id="tok-params">
+      <div class="panel-title">Plasma Parameters</div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Temperature</span>
+          <span class="val hot" id="v-temp">20 keV</span>
+        </div>
+        <input type="range" id="s-temp" min="5" max="200" value="20" step="1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Density (log)</span>
+          <span class="val" id="v-dens">10²⁰ m⁻³</span>
+        </div>
+        <input type="range" id="s-dens" min="18" max="21" value="20" step="0.1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Confinement τ_E</span>
+          <span class="val" id="v-tau">3.0 s</span>
+        </div>
+        <input type="range" id="s-tau" min="0.1" max="10" value="3.0" step="0.1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Plasma Volume</span>
+          <span class="val" id="v-vol">840 m³</span>
+        </div>
+        <input type="range" id="s-vol" min="10" max="2000" value="840" step="10"
+               oninput="sliderUpdate()">
+      </div>
+    </div>
+
+    <!-- ICF params -->
+    <div class="panel" id="icf-params" style="display:none">
+      <div class="panel-title">Implosion Parameters</div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Driver Energy</span>
+          <span class="val" id="v-laser">2.1 MJ</span>
+        </div>
+        <input type="range" id="s-laser" min="0.1" max="20" value="2.1" step="0.1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Capsule Radius</span>
+          <span class="val" id="v-cap">2.4 mm</span>
+        </div>
+        <input type="range" id="s-cap" min="0.5" max="10" value="2.4" step="0.1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Coupling Efficiency</span>
+          <span class="val" id="v-coup">15%</span>
+        </div>
+        <input type="range" id="s-coup" min="5" max="40" value="15" step="1"
+               oninput="sliderUpdate()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Implosion Velocity</span>
+          <span class="val" id="v-vimp">370 km/s</span>
+        </div>
+        <input type="range" id="s-vimp" min="100" max="600" value="370" step="10"
+               oninput="sliderUpdate()">
+      </div>
+    </div>
+
+    <!-- Fire -->
+    <button class="ignite-btn" id="ignite-btn" onclick="fire()">
+      Initiate Plasma · Engage
+    </button>
+  </div>
+
+  <!-- ── METRICS ─────────────────────────────────────────── -->
+  <div class="readout">
+    <div class="metric">
+      <div class="label">Q Factor</div>
+      <div class="value gold" id="m-q">—</div>
+      <div class="unit">P_out / P_in</div>
+      <div class="lawson-track">
+        <div class="lawson-fill" id="q-fill" style="width:0"></div>
+      </div>
+    </div>
+    <div class="metric">
+      <div class="label">Fusion Power</div>
+      <div class="value hot" id="m-pfus">—</div>
+      <div class="unit" id="m-pfus-u">watts</div>
+    </div>
+    <div class="metric">
+      <div class="label">Net Output</div>
+      <div class="value" id="m-pnet">—</div>
+      <div class="unit" id="m-pnet-u">watts</div>
+      <div class="sub" id="m-pnet-s"></div>
+    </div>
+    <div class="metric">
+      <div class="label">Lawson nτT</div>
+      <div class="value" id="m-law">—</div>
+      <div class="unit">criterion 3×10²¹</div>
+      <div class="lawson-track">
+        <div class="lawson-fill" id="law-fill" style="width:0"></div>
+        <div class="lawson-marker"></div>
+      </div>
+    </div>
+    <div class="metric">
+      <div class="label">Plasma Temp</div>
+      <div class="value hot" id="m-tkev">—</div>
+      <div class="unit" id="m-tunit">keV</div>
+      <div class="sub" id="m-tmk"></div>
+    </div>
+    <div class="metric">
+      <div class="label">Reaction Rate</div>
+      <div class="value cold" id="m-rrate">—</div>
+      <div class="unit">reactions/s·m³</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  PHYSICS CONSTANTS (CODATA 2018)
+// ═══════════════════════════════════════════════════════════════════
+const G    = 6.67430e-11;
+const c    = 2.99792458e8;
+const hbar = 1.054571817e-34;
+const kB   = 1.380649e-23;
+const eV   = 1.602176634e-19;
+const keV  = eV * 1e3;
+const MeV  = eV * 1e6;
+const u    = 1.66053906660e-27;   // atomic mass unit
+
+// Reaction energies
+const E_DT   = 17.6 * MeV;   // D+T → He4+n
+const E_DD   = 3.27 * MeV;   // D+D → He3+n (average of two branches)
+const E_pB11 = 8.7  * MeV;   // p+B11 → 3He4
+
+// Lawson criterion target (D-T): n × τ × T > 3e21 m⁻³·s·keV
+const LAWSON_DT   = 3e21;
+const LAWSON_DD   = 2e22;   // harder to ignite
+const LAWSON_PB11 = 2e24;   // extremely hard — aneutronic
+
+// ─── Reactivity σ⟨v⟩ [m³/s] via log-log table + interpolation ─────
+// D-T: Bosch-Hale 1992 Table IV reference points (×1e-6 from cm³/s)
+// D-D: NRL Plasma Formulary approximate values
+// p-B11: Sikora & Weller 2016
+const SV_DT_T  = [1,2,3,5,8,10,15,20,30,40,50,60,70,80,100,150,200];
+const SV_DT_SV = [5.5e-29,3.7e-27,3.0e-26,1.3e-25,1.0e-24,6.3e-24,
+                  2.4e-23,4.2e-23,8.8e-23,1.6e-22,2.6e-22,3.3e-22,
+                  3.7e-22,3.6e-22,2.9e-22,1.9e-22,1.5e-22];
+const SV_DD_T  = [2,5,10,20,40,80,100,200,300];
+const SV_DD_SV = [2.4e-30,9.0e-29,2.8e-27,1.2e-26,8.0e-26,5.0e-25,
+                  9.0e-25,5.6e-24,1.0e-23];
+const SV_PB_T  = [100,150,200,300,500,600,800];
+const SV_PB_SV = [3.0e-32,3.0e-31,1.5e-30,4.0e-30,5.0e-30,5.5e-30,4.0e-30];
+
+function loglogInterp(Ts, SVs, T) {
+  if (T <= Ts[0])               return SVs[0] * Math.pow(T/Ts[0], 4);
+  if (T >= Ts[Ts.length-1])    return SVs[SVs.length-1] * Math.pow(T/Ts[Ts.length-1], -1.5);
+  for (let i = 0; i < Ts.length-1; i++) {
+    if (T <= Ts[i+1]) {
+      const lT  = Math.log(T),   lT0 = Math.log(Ts[i]),   lT1 = Math.log(Ts[i+1]);
+      const lSV0= Math.log(SVs[i]), lSV1 = Math.log(SVs[i+1]);
+      const frac = (lT - lT0) / (lT1 - lT0);
+      return Math.exp(lSV0 + frac*(lSV1-lSV0));
+    }
+  }
+  return SVs[SVs.length-1];
+}
+
+function sigmav(T_keV, fuel) {
+  const T = Math.max(T_keV, 0.5);
+  if (fuel === 'dt')   return loglogInterp(SV_DT_T, SV_DT_SV, T);
+  if (fuel === 'dd')   return loglogInterp(SV_DD_T, SV_DD_SV, T);
+  return loglogInterp(SV_PB_T, SV_PB_SV, T);
+}
+
+function fuelEnergy(fuel) {
+  return fuel==='dt' ? E_DT : fuel==='dd' ? E_DD : E_pB11;
+}
+
+function lawsonCrit(fuel) {
+  return fuel==='dt' ? LAWSON_DT : fuel==='dd' ? LAWSON_DD : LAWSON_PB11;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════════
+let mode   = 'tok';
+let fuel   = 'dt';
+let firing = false;
+let plasma = { T:20, n:1e20, tau:3, vol:840, active:0 };  // tokamak
+let icf    = { E:2.1e6, R:2.4e-3, coup:0.15, vimp:370e3, active:0 };
+
+// ═══════════════════════════════════════════════════════════════════
+//  PHYSICS ENGINE
+// ═══════════════════════════════════════════════════════════════════
+function computeTokamak() {
+  const T   = plasma.T;          // keV
+  const n   = plasma.n;          // m⁻³
+  const tau = plasma.tau;        // s
+  const V   = plasma.vol;        // m³
+  const sv  = sigmav(T, fuel);   // m³/s
+  const Ef  = fuelEnergy(fuel);  // J
+  const Lc  = lawsonCrit(fuel);
+
+  // Lawson parameter
+  const lawson = n * tau * T;    // m⁻³·s·keV
+
+  // Reaction rate per unit volume
+  const rr = (n*n/4) * sv;       // reactions/m³/s
+
+  // Fusion power
+  const Pfus = rr * V * Ef;      // W
+
+  // Heating power needed (Bremsstrahlung dominated for now)
+  // Simple model: P_heat = n*kB*T*V / tau  (energy stored / confinement time)
+  const Pstore = n * T * keV * V;  // total thermal energy
+  const Pheat  = Pstore / tau;
+
+  // Q factor
+  const Q = Pheat > 0 ? Pfus / Pheat : 0;
+
+  // Net power (fusion heating is α-particle share 20% for D-T; neutrons leave)
+  const alphaFrac = fuel==='dt' ? 0.20 : fuel==='dd' ? 0.50 : 1.0; // p-B11 aneutronic
+  const Palpha = Pfus * alphaFrac;  // self-heating
+  const Pnet   = Pfus - Pheat;      // net electrical (rough: wall efficiency ~40%)
+
+  return { lawson, Lc, rr, Pfus, Pheat, Q, Pnet, sv, ignited: lawson >= Lc };
+}
+
+function computeICF() {
+  const EL   = icf.E;           // J driver energy
+  const R    = icf.R;           // m capsule radius
+  const coup = icf.coup;        // coupling efficiency (0-1)
+  const vimp = icf.vimp;        // implosion velocity m/s
+
+  // DT fuel mass inside capsule (shell ~15% of total)
+  const rho_fuel = 215;         // kg/m³ (solid DT)
+  const f_fuel   = 0.15;
+  const m_fuel   = (4/3)*Math.PI*R*R*R * rho_fuel * f_fuel;
+  const n_pairs  = m_fuel / (2.5 * u);   // number of D-T pairs
+
+  // Compression ratio (vimp drives this)
+  const vimp_ign = 3e5;   // ~300 km/s is rough ignition threshold for coupling
+  const compress = Math.pow(vimp/vimp_ign, 2.5) * coup/0.15;
+
+  // Areal density ρR (g/cm²)
+  // At compression C, ρR ∝ ρ_0 * R * C^(2/3)
+  const rho_cm3 = rho_fuel * 1e-3;  // g/cm³
+  const R_cm    = R * 100;
+  const rhoR    = Math.min(rho_cm3 * R_cm * Math.pow(Math.max(compress,0),0.67), 3.0);
+
+  // Burn efficiency η_burn = ρR / (6.7 + ρR)  [Fraley et al.]
+  const eta_burn = rhoR / (6.7 + rhoR);
+
+  // Hotspot temperature ~5-15 keV for ignition
+  const T_hot = Math.min(5 + 10*(vimp/vimp_ign - 1)*coup/0.15, 20);
+
+  // Fusion energy
+  const Efus = n_pairs * eta_burn * fuelEnergy(fuel);
+
+  // Q ≡ Efus / EL
+  const Q = EL > 0 ? Efus / EL : 0;
+
+  // Rep-rate assumed 5 Hz for power plant
+  const rep = 5;
+  const Pfus = Efus * rep;
+  const Pheat = EL * rep;
+  const Pnet  = Pfus - Pheat;
+
+  // Lawson-equivalent
+  const sv  = sigmav(Math.max(T_hot,1), fuel);
+  const lawson = Math.min(rhoR, 3.0) / (rho_fuel * u) * 1e-6;  // rough equivalent
+  const Lc = lawsonCrit(fuel);
+
+  return { lawson, Lc, rr:0, Pfus, Pheat, Q, Pnet, sv, ignited: Q > 1, rhoR, eta_burn, T_hot };
+}
+
+function compute() {
+  return mode === 'tok' ? computeTokamak() : computeICF();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function fmtPow(W) {
+  const abs = Math.abs(W);
+  if (abs < 1e3)  return { v: W.toFixed(0),       u: 'W' };
+  if (abs < 1e6)  return { v: (W/1e3).toFixed(2),  u: 'kW' };
+  if (abs < 1e9)  return { v: (W/1e6).toFixed(2),  u: 'MW' };
+  if (abs < 1e12) return { v: (W/1e9).toFixed(2),  u: 'GW' };
+  if (abs < 1e15) return { v: (W/1e12).toFixed(2), u: 'TW' };
+  if (abs < 1e18) return { v: (W/1e15).toFixed(2), u: 'PW' };
+  return { v: W.toExponential(2), u: 'W' };
+}
+
+function fmtSci(x) {
+  if (x <= 0) return '0';
+  const e = Math.floor(Math.log10(x));
+  const m = (x / Math.pow(10,e)).toFixed(1);
+  return `${m}×10${sup(e)}`;
+}
+
+function sup(n) {
+  const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+  return String(n).split('').map(c => map[c]||c).join('');
+}
+
+function kelvin(T_keV) {
+  return T_keV * keV / kB;
+}
+
+function fmtKelvin(K) {
+  if (K < 1e6)  return K.toExponential(1) + ' K';
+  if (K < 1e9)  return (K/1e6).toFixed(0) + ' MK';
+  if (K < 1e12) return (K/1e9).toFixed(0) + ' GK';
+  return (K/1e12).toFixed(1) + ' TK';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  UI UPDATE
+// ═══════════════════════════════════════════════════════════════════
+function updateMetrics() {
+  const r = compute();
+
+  // Q
+  const Q = r.Q;
+  const Qstr = Q < 0.01 ? Q.toExponential(1) : Q.toFixed(1);
+  document.getElementById('m-q').textContent = Qstr;
+  document.getElementById('m-q').className = 'value ' + (Q >= 5 ? 'ok' : Q >= 1 ? 'hot' : '');
+
+  // Q fill (log scale 0→Q=20 = 100%)
+  const qpct = Math.min(100, (Q/20)*100);
+  document.getElementById('q-fill').style.width = qpct + '%';
+  document.getElementById('q-fill').style.background = Q >= 1
+    ? `linear-gradient(90deg, #44cc88, #44ff88)` : `linear-gradient(90deg, #cc4444, #ee6644)`;
+
+  // Fusion power
+  const Pf = fmtPow(r.Pfus);
+  document.getElementById('m-pfus').textContent = Pf.v;
+  document.getElementById('m-pfus-u').textContent = Pf.u;
+
+  // Net power
+  const Pn = fmtPow(r.Pnet);
+  document.getElementById('m-pnet').textContent = Pn.v;
+  document.getElementById('m-pnet-u').textContent = Pn.u;
+  document.getElementById('m-pnet').className = 'value ' + (r.Pnet > 0 ? 'ok' : 'value');
+  document.getElementById('m-pnet-s').textContent = r.Pnet > 0 ? 'net gain' : 'net loss';
+
+  // Lawson
+  const lawFrac = Math.min(1, r.lawson / r.Lc);
+  document.getElementById('m-law').textContent = fmtSci(r.lawson);
+  document.getElementById('m-law').className = 'value ' + (r.ignited ? 'ok' : '');
+  const lpct = Math.min(100, lawFrac * 100);
+  document.getElementById('law-fill').style.width = lpct + '%';
+  document.getElementById('law-fill').style.background = r.ignited
+    ? `linear-gradient(90deg, #44cc88, #88ffcc)` : `linear-gradient(90deg, #cc4444, #ff6644)`;
+
+  // Temperature
+  const T_keV = mode === 'tok' ? plasma.T : (r.T_hot || plasma.T);
+  document.getElementById('m-tkev').textContent = T_keV.toFixed(1);
+  document.getElementById('m-tunit').textContent = 'keV';
+  document.getElementById('m-tmk').textContent = fmtKelvin(kelvin(T_keV));
+
+  // Reaction rate
+  const rr = mode === 'tok' ? r.rr : r.sv * (plasma.n**2)/4;
+  document.getElementById('m-rrate').textContent = fmtSci(rr);
+
+  // HUD
+  document.getElementById('hud-mode').textContent = mode === 'tok' ? 'TOKAMAK' : 'ICF';
+  document.getElementById('hud-t').textContent = T_keV.toFixed(0) + ' keV';
+  document.getElementById('hud-law').textContent = r.ignited ? 'EXCEEDED' : 'BELOW';
+  document.getElementById('hud-law').className = 'val ' + (r.ignited ? 'ok' : 'no');
+  document.getElementById('hud-q').textContent = 'Q=' + (Q<10?Q.toFixed(1):Q.toFixed(0));
+
+  // Indicator
+  const ind = document.getElementById('main-indicator');
+  ind.className = 'indicator ' + (r.ignited ? 'active' : r.Q > 0.5 ? '' : 'critical');
+
+  // Drive canvas state
+  plasmaIntensity = Math.min(1, Q / 10 + (r.ignited ? 0.3 : 0));
+  plasmaColor = r.ignited ? 1 : lawFrac;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SLIDER BINDINGS
+// ═══════════════════════════════════════════════════════════════════
+function sliderUpdate() {
+  // Tokamak
+  const T   = parseFloat(document.getElementById('s-temp').value);
+  const ld  = parseFloat(document.getElementById('s-dens').value);
+  const tau = parseFloat(document.getElementById('s-tau').value);
+  const vol = parseFloat(document.getElementById('s-vol').value);
+  plasma.T   = T;
+  plasma.n   = Math.pow(10, ld);
+  plasma.tau = tau;
+  plasma.vol = vol;
+
+  document.getElementById('v-temp').textContent = T + ' keV';
+  document.getElementById('v-dens').textContent = '10' + sup(Math.round(ld*10)/10) + ' m⁻³';
+  document.getElementById('v-tau').textContent  = tau.toFixed(1) + ' s';
+  document.getElementById('v-vol').textContent  = vol.toFixed(0) + ' m³';
+
+  // ICF
+  const EL   = parseFloat(document.getElementById('s-laser').value);
+  const cap  = parseFloat(document.getElementById('s-cap').value);
+  const coup = parseFloat(document.getElementById('s-coup').value);
+  const vimp = parseFloat(document.getElementById('s-vimp').value);
+  icf.E    = EL * 1e6;
+  icf.R    = cap * 1e-3;
+  icf.coup = coup / 100;
+  icf.vimp = vimp * 1e3;
+
+  document.getElementById('v-laser').textContent = EL.toFixed(1) + ' MJ';
+  document.getElementById('v-cap').textContent   = cap.toFixed(1) + ' mm';
+  document.getElementById('v-coup').textContent  = coup + '%';
+  document.getElementById('v-vimp').textContent  = vimp + ' km/s';
+
+  updateMetrics();
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('m-tok').className = 'mode-btn' + (m==='tok'?' active':'');
+  document.getElementById('m-icf').className = 'mode-btn' + (m==='icf'?' active':'');
+  document.getElementById('tok-params').style.display = m==='tok' ? 'block' : 'none';
+  document.getElementById('icf-params').style.display = m==='icf' ? 'block' : 'none';
+  document.getElementById('hud-mode').textContent = m==='tok' ? 'TOKAMAK' : 'ICF';
+  updateMetrics();
+}
+
+const FUEL_NOTES = {
+  dt:   'D+T → ⁴He (3.5 MeV) + n (14.1 MeV). Highest cross-section. Tritium breeding required.',
+  dd:   'D+D → two branches (T+p or ³He+n). No tritium needed. 10× harder to ignite than D-T.',
+  pb11: 'p+¹¹B → 3×⁴He (8.7 MeV). Aneutronic — no neutron shielding needed. Requires T>200 keV.',
+};
+
+function setFuel(f) {
+  fuel = f;
+  ['dt','dd','pb11'].forEach(x => {
+    document.getElementById('f-'+x).className = 'fuel-btn' + (x===f?' active':'');
+  });
+  document.getElementById('fuel-note').textContent = FUEL_NOTES[f];
+  updateMetrics();
+}
+
+function fire() {
+  const btn = document.getElementById('ignite-btn');
+  if (firing) return;
+  firing = true;
+  btn.classList.add('firing');
+  btn.textContent = mode === 'tok' ? 'Initiating plasma current…' : 'Firing driver…';
+  plasma.active = 1;
+  icf.active = 1;
+
+  setTimeout(() => {
+    firing = false;
+    btn.classList.remove('firing');
+    btn.textContent = 'Initiate Plasma · Engage';
+    plasma.active = 0;
+    icf.active = 0;
+  }, 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CANVAS RENDERER
+// ═══════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('rc');
+const ctx    = canvas.getContext('2d');
+let plasmaIntensity = 0;
+let plasmaColor     = 0;
+let t = 0;
+
+// Particle pool
+const MAX_P = 280;
+const parts = [];
+function initParticles() {
+  parts.length = 0;
+  for (let i = 0; i < MAX_P; i++) {
+    parts.push(makePart(Math.random()));
+  }
+}
+function makePart(phase) {
+  return {
+    // Tokamak: circular orbit in torus cross-section
+    angle:  Math.random() * Math.PI * 2,
+    r:      0.05 + Math.random() * 0.22,
+    speed:  (0.4 + Math.random() * 0.8) * (Math.random()<0.5?1:-1),
+    // ICF: outward from center
+    px:     (Math.random()-0.5)*0.1,
+    py:     (Math.random()-0.5)*0.1,
+    vx:     (Math.random()-0.5)*0.02,
+    vy:     (Math.random()-0.5)*0.02,
+    life:   Math.random(),
+    decay:  0.004 + Math.random()*0.008,
+    size:   1 + Math.random()*2.5,
+    type:   Math.random() < 0.08 ? 'neutron' : 'plasma',
+    phase:  phase,
+  };
+}
+
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  canvas.width  = Math.round(r.width  * Math.min(devicePixelRatio,2));
+  canvas.height = Math.round(r.height * Math.min(devicePixelRatio,2));
+}
+window.addEventListener('resize', resize);
+resize();
+initParticles();
+
+function drawTokamak(W, H) {
+  const cx = W/2, cy = H/2;
+  const OR = Math.min(W,H) * 0.40;  // outer plasma radius
+  const IR = OR * 0.28;              // inner column radius
+  const PA = OR * 0.72;              // plasma boundary semi-major
+  const PB = OR * 0.55;              // plasma boundary semi-minor
+
+  // ── Vessel wall (D-shape outline)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, OR+12, OR*0.88, 0, 0, Math.PI*2);
+  ctx.strokeStyle = '#1c2232';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+
+  // ── Magnetic field coils (TF coils — rings)
+  for (let i = 0; i < 18; i++) {
+    const a = (i/18) * Math.PI * 2;
+    const fx = cx + Math.cos(a) * (OR + 6);
+    const fy = cy + Math.sin(a) * (OR * 0.88 + 6) * 0.6;
+    ctx.beginPath();
+    ctx.arc(fx, fy, 5, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(68,180,255,0.35)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(68,180,255,0.2)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // ── Field lines (nested flux surfaces)
+  const layers = 5;
+  for (let l = 0; l < layers; l++) {
+    const frac = (l+1) / (layers+1);
+    const alpha = 0.06 + frac*0.10;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, PA*frac, PB*frac, 0, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(68,212,255,${alpha})`;
+    ctx.lineWidth   = 0.8;
+    ctx.setLineDash([3,5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── Plasma core (hot region)
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, PA);
+  const I = plasmaIntensity;
+  const hot = `rgba(${Math.round(100+155*I)},${Math.round(200-80*I)},255,`;
+  const mid = `rgba(255,${Math.round(180-80*plasmaColor)},${Math.round(100-90*plasmaColor)},`;
+  glow.addColorStop(0,   `rgba(255,255,${Math.round(200-150*plasmaColor)},${0.55*I})`);
+  glow.addColorStop(0.3, mid + `${0.35*I})`);
+  glow.addColorStop(0.7, hot + `${0.18*I})`);
+  glow.addColorStop(1,   'rgba(0,0,0,0)');
+
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, PA, PB, 0, 0, Math.PI*2);
+  ctx.fillStyle = glow;
+  ctx.fill();
+
+  // ── Inner column (center stack)
+  const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, IR);
+  cg.addColorStop(0, '#2a3a5a');
+  cg.addColorStop(1, '#141824');
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, IR, IR*0.9, 0, 0, Math.PI*2);
+  ctx.fillStyle = cg;
+  ctx.fill();
+  ctx.strokeStyle = '#2a3a5a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // ── Divertor (bottom X-point marker)
+  const dx = cx, dy = cy + PB + 14;
+  ctx.beginPath();
+  ctx.moveTo(dx-8, dy-8); ctx.lineTo(dx+8, dy+8);
+  ctx.moveTo(dx+8, dy-8); ctx.lineTo(dx-8, dy+8);
+  ctx.strokeStyle = 'rgba(200,80,40,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ── Particles orbiting in torus
+  for (const p of parts) {
+    if (p.type === 'neutron') {
+      // Neutrons escape radially outward
+      p.px += p.vx * (1 + I*3);
+      p.py += p.vy * (1 + I*3);
+      p.life -= p.decay * 0.5;
+      if (p.life <= 0) { Object.assign(p, makePart(Math.random())); p.px = p.py = 0; }
+      const nx = cx + p.px * W;
+      const ny = cy + p.py * H;
+      ctx.beginPath();
+      ctx.arc(nx, ny, p.size*0.8, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(170,255,170,${p.life*0.7*I})`;
+      ctx.fill();
+    } else {
+      // Plasma particles orbit
+      p.angle += p.speed * (0.012 + I*0.018);
+      // Particles confined near plasma boundary with some scatter
+      const noiseR = p.r * (0.9 + 0.2*Math.sin(p.angle*3 + t*2));
+      const px = cx + Math.cos(p.angle) * noiseR * W * 0.36;
+      const py = cy + Math.sin(p.angle) * noiseR * H * 0.28;
+      const heat = Math.abs(noiseR - 0.15) < 0.08 ? 1 : 0.4;
+      const a    = 0.4 * I * heat * (0.7 + 0.3*Math.sin(t*4 + p.phase*6));
+      ctx.beginPath();
+      ctx.arc(px, py, p.size * (0.7 + 0.3*I), 0, Math.PI*2);
+      const blend = plasmaColor;
+      const pr = Math.round(80  + 175*blend);
+      const pg = Math.round(160 - 60*blend);
+      const pb = Math.round(255 - 200*blend);
+      ctx.fillStyle = `rgba(${pr},${pg},${pb},${a})`;
+      ctx.fill();
+    }
+  }
+}
+
+function drawICF(W, H) {
+  const cx = W/2, cy = H/2;
+  const r0 = Math.min(W,H) * 0.12;  // capsule radius
+  const firing_local = plasma.active || icf.active;
+
+  // ── Target capsule
+  const cg = ctx.createRadialGradient(cx - r0*0.3, cy - r0*0.3, 0, cx, cy, r0);
+  cg.addColorStop(0, `rgba(180,220,255,${0.6+plasmaIntensity*0.4})`);
+  cg.addColorStop(0.6, `rgba(60,80,140,0.5)`);
+  cg.addColorStop(1, `rgba(20,30,70,0.3)`);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r0, 0, Math.PI*2);
+  ctx.fillStyle = cg;
+  ctx.fill();
+  ctx.strokeStyle = `rgba(100,160,255,0.4)`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ── Laser beams (12 beams)
+  const beams = 12;
+  for (let i = 0; i < beams; i++) {
+    const a   = (i / beams) * Math.PI * 2 + t*0.2;
+    const bx1 = cx + Math.cos(a) * W * 0.44;
+    const by1 = cy + Math.sin(a) * H * 0.44;
+    const bx2 = cx + Math.cos(a) * (r0 + 4);
+    const by2 = cy + Math.sin(a) * (r0 + 4);
+    const pulse = 0.5 + 0.5*Math.sin(t*6 + i*0.5);
+    const intensity = firing_local ? (0.7 + 0.3*pulse)*plasmaIntensity : 0.15*pulse;
+
+    const lg = ctx.createLinearGradient(bx1, by1, bx2, by2);
+    lg.addColorStop(0, `rgba(0,200,255,0)`);
+    lg.addColorStop(0.6, `rgba(100,200,255,${intensity*0.5})`);
+    lg.addColorStop(1, `rgba(200,230,255,${intensity})`);
+    ctx.beginPath();
+    ctx.moveTo(bx1, by1);
+    ctx.lineTo(bx2, by2);
+    ctx.strokeStyle = lg;
+    ctx.lineWidth = 1.5 + intensity*1.5;
+    ctx.stroke();
+  }
+
+  // ── Hotspot glow (center)
+  if (plasmaIntensity > 0.05) {
+    const hg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r0*1.5);
+    hg.addColorStop(0, `rgba(255,200,100,${0.8*plasmaIntensity})`);
+    hg.addColorStop(0.3, `rgba(255,120,40,${0.4*plasmaIntensity})`);
+    hg.addColorStop(0.7, `rgba(100,80,255,${0.15*plasmaIntensity})`);
+    hg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r0*1.5, 0, Math.PI*2);
+    ctx.fillStyle = hg;
+    ctx.fill();
+  }
+
+  // ── Outgoing neutron/alpha particles
+  for (const p of parts) {
+    p.px += p.vx * (1 + plasmaIntensity*4);
+    p.py += p.vy * (1 + plasmaIntensity*4);
+    p.life -= p.decay;
+    if (p.life <= 0 || Math.hypot(p.px,p.py) > 0.6) {
+      Object.assign(p, makePart(Math.random()));
+      p.px = (Math.random()-0.5)*0.02;
+      p.py = (Math.random()-0.5)*0.02;
+      p.vx = (Math.random()-0.5)*0.015;
+      p.vy = (Math.random()-0.5)*0.015;
+    }
+    const nx = cx + p.px * W;
+    const ny = cy + p.py * H;
+    const a  = p.life * 0.7 * plasmaIntensity;
+    const col = p.type==='neutron' ? '170,255,170' : '255,160,80';
+    ctx.beginPath();
+    ctx.arc(nx, ny, p.size*0.7, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${col},${a})`;
+    ctx.fill();
+  }
+}
+
+function drawFrame() {
+  resize();
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep space background gradient
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
+  bg.addColorStop(0, '#080d18');
+  bg.addColorStop(1, '#060810');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+
+  // Slight grid
+  ctx.strokeStyle = 'rgba(28,34,50,0.5)';
+  ctx.lineWidth = 0.5;
+  const step = Math.round(W/12);
+  for (let x=0; x<W; x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y=0; y<H; y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  if (mode === 'tok') drawTokamak(W, H);
+  else               drawICF(W, H);
+
+  t += 0.016;
+  requestAnimationFrame(drawFrame);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════
+sliderUpdate();
+drawFrame();
+</script>
+</body>
+</html>

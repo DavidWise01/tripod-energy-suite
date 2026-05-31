@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRIPOD ENERGY SUITE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --void:   #0a0a08;
+  --deep:   #111110;
+  --frame:  #1e1e1a;
+  --mid:    #2d2d28;
+  --dim:    #4a4a42;
+  --ash:    #7a7a6e;
+  --sand:   #b4b09a;
+  --bone:   #d4cfc6;
+  --bright: #e8e4dc;
+
+  --amber:  #c4a35a;
+  --amber2: #e0bc70;
+  --teal:   #5ac4aa;
+  --teal2:  #7adec4;
+  --copper: #b87333;
+  --red:    #c45a2d;
+
+  /* Tool accent colors */
+  --c-fusion: #4488ff;
+  --c-dyson:  #ffcc44;
+  --c-bh:     #38b6a0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { height:100%; }
+
+body {
+  background: var(--void);
+  color: var(--sand);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:999;
+}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+header {
+  padding: 3rem 3rem 2.5rem;
+  border-bottom: 1px solid var(--frame);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.logo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.logo .eyebrow {
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.logo h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(1.8rem,4vw,3rem);
+  font-weight: 400;
+  color: var(--bright);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.logo h1 span { color: var(--amber); }
+.logo .tagline {
+  font-size: 0.65rem;
+  color: var(--ash);
+  max-width: 48ch;
+  line-height: 1.55;
+  margin-top: 0.25rem;
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  font-size: 0.58rem;
+  color: var(--dim);
+  text-align: right;
+  letter-spacing: 0.06em;
+}
+.header-right b { color: var(--amber); }
+
+/* ── ENERGY SCALE CANVAS ─────────────────────────────────── */
+.scale-wrap {
+  position: relative;
+  height: 340px;
+  border-bottom: 1px solid var(--frame);
+  background: linear-gradient(180deg, var(--void) 0%, #0c0c0a 100%);
+  overflow: hidden;
+}
+#scale-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.scale-label {
+  position: absolute;
+  top: 1.25rem;
+  left: 2rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* ── TOOL CARDS ──────────────────────────────────────────── */
+.tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--frame);
+}
+.tool-card {
+  border-right: 1px solid var(--frame);
+  padding: 2.5rem 2.5rem 2rem;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.tool-card:last-child { border-right: none; }
+.tool-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.tool-card.fusion::before  { background: var(--c-fusion); }
+.tool-card.dyson::before   { background: var(--c-dyson); }
+.tool-card.bh::before      { background: var(--c-bh); }
+
+.tool-card:hover { background: rgba(255,255,255,0.018); }
+.tool-card:hover::before { opacity: 1; }
+
+.tc-tier {
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.75rem;
+}
+.tc-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--bright);
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+.tc-name span.fusion { color: var(--c-fusion); }
+.tc-name span.dyson  { color: var(--c-dyson); }
+.tc-name span.bh     { color: var(--c-bh); }
+
+.tc-scale {
+  font-size: 0.62rem;
+  color: var(--amber);
+  margin-bottom: 1rem;
+  letter-spacing: 0.06em;
+}
+.tc-desc {
+  font-size: 0.65rem;
+  color: var(--ash);
+  line-height: 1.65;
+  margin-bottom: 1.25rem;
+}
+.tc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+.tc-tag {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--frame);
+  color: var(--dim);
+  padding: 0.25rem 0.6rem;
+  border-radius: 2px;
+}
+.tc-open {
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  transition: color 0.2s;
+}
+.tool-card.fusion:hover .tc-open { color: var(--c-fusion); }
+.tool-card.dyson:hover  .tc-open { color: var(--c-dyson); }
+.tool-card.bh:hover     .tc-open { color: var(--c-bh); }
+.tc-open::after { content: ' →'; }
+
+/* ── PHYSICS REFERENCE ────────────────────────────────────── */
+.ref {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0;
+}
+.ref-block {
+  border-right: 1px solid var(--frame);
+  border-bottom: 1px solid var(--frame);
+  padding: 1.75rem 2.25rem;
+}
+.ref-block:nth-child(even):last-child { border-right: none; }
+.ref-title {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.75rem;
+}
+.ref-eq {
+  font-size: 0.78rem;
+  color: var(--bone);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+.ref-note {
+  font-size: 0.58rem;
+  color: var(--dim);
+  margin-top: 0.6rem;
+  line-height: 1.5;
+}
+
+/* ── SCALE TABLE ──────────────────────────────────────────── */
+.scale-table {
+  padding: 2rem 2.5rem;
+  border-bottom: 1px solid var(--frame);
+}
+.st-title {
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1.25rem;
+}
+.st-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--frame);
+  font-size: 0.62rem;
+}
+.st-row:first-of-type { border-top: 0; }
+.st-w { color: var(--amber); letter-spacing: 0.04em; font-weight: 500; }
+.st-src { color: var(--bone); }
+.st-tool { color: var(--dim); text-align: right; }
+.st-tool.link { color: var(--teal); }
+@media(max-width:640px){ .st-row { grid-template-columns: 80px 1fr; } .st-tool { display:none; } }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer {
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.55rem;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+footer a { color: var(--amber); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ────────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <div class="eyebrow">TriPod Energy Suite · v1.1</div>
+    <h1>Energy at <span>Every Scale</span></h1>
+    <div class="tagline">
+      Interactive physics simulators spanning the full Kardashev ladder —
+      from fusion reactors to stellar capture to black hole extraction.
+      No dependencies. No build step. Open in browser.
+    </div>
+  </div>
+  <div class="header-right">
+    <div>Canvas 2D · WebGL2 · Web Audio</div>
+    <div>CODATA 2018 physics constants</div>
+    <div><b>ROOT0</b> / David Lee Wise / TriPod LLC</div>
+  </div>
+</header>
+
+<!-- ── ENERGY SCALE VISUALIZATION ────────────────────────── -->
+<div class="scale-wrap">
+  <div class="scale-label">Full Kardashev Energy Ladder · 10⁰ → 10⁴⁷ W</div>
+  <canvas id="scale-canvas"></canvas>
+</div>
+
+<!-- ── TOOL CARDS ─────────────────────────────────────────── -->
+<div class="tools">
+
+  <a href="fusion/fusion-reactor.html" class="tool-card fusion">
+    <div class="tc-tier">Tier 2 · Fusion Scale · New</div>
+    <div class="tc-name"><span class="fusion">Fusion</span> Reactor</div>
+    <div class="tc-scale">10⁶ – 10¹⁰ W · GW range</div>
+    <div class="tc-desc">
+      Real Bosch-Hale D-T cross-sections. Tokamak (ITER geometry) and
+      inertial confinement (NIF-style) modes. Lawson criterion live meter.
+      Q factor, net power, reaction rate. Three fuel types.
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">Tokamak</span>
+      <span class="tc-tag">ICF</span>
+      <span class="tc-tag">Lawson nτT</span>
+      <span class="tc-tag">D-T / D-D / p-B¹¹</span>
+      <span class="tc-tag">Kerr metric</span>
+    </div>
+    <div class="tc-open">Open Reactor</div>
+  </a>
+
+  <a href="dyson-sphere/dyson-sphere.html" class="tool-card dyson">
+    <div class="tc-tier">Tier 3 · Stellar Scale</div>
+    <div class="tc-name"><span class="dyson">Dyson</span> Sphere</div>
+    <div class="tc-scale">10²⁰ – 10²⁶ W · Kardashev II</div>
+    <div class="tc-desc">
+      Swarm, Bubble, and Shell variants. Real solar flux F=L/(4πR²),
+      Kepler orbital mechanics, Stefan-Boltzmann equilibrium temperature,
+      Kardashev index. Bubble critical areal density for statite hover.
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">Swarm</span>
+      <span class="tc-tag">Statite Bubble</span>
+      <span class="tc-tag">Rigid Shell</span>
+      <span class="tc-tag">Kardashev Scale</span>
+      <span class="tc-tag">Orbital Mech</span>
+    </div>
+    <div class="tc-open">Open Sphere</div>
+  </a>
+
+  <a href="black-hole/black-hole-energy-v2.html" class="tool-card bh">
+    <div class="tc-tier">Tier 4 · Black Hole Scale</div>
+    <div class="tc-name">Black Hole <span class="bh">Extractor</span></div>
+    <div class="tc-scale">10³⁰ – 10⁴⁷ W · Quasar regime</div>
+    <div class="tc-desc">
+      Four extraction methods — Hawking radiation, superradiant scattering,
+      Penrose process, Blandford-Znajek. Real Kerr metric with horizons
+      r± = (rₛ/2)(1 ± √(1−a²)). Accretion disk and relativistic jet animation.
+    </div>
+    <div class="tc-tags">
+      <span class="tc-tag">Hawking 0.1%</span>
+      <span class="tc-tag">Superradiance 4.8%</span>
+      <span class="tc-tag">Penrose 20.7%</span>
+      <span class="tc-tag">Blandford-Znajek</span>
+      <span class="tc-tag">Kerr Metric</span>
+    </div>
+    <div class="tc-open">Open Extractor</div>
+  </a>
+
+</div>
+
+<!-- ── SCALE TABLE ─────────────────────────────────────────── -->
+<div class="scale-table">
+  <div class="st-title">Energy Scale Reference</div>
+  <div class="st-row"><span class="st-w">10¹³ W</span><span class="st-src">Earth 2024 total civilization power</span><span class="st-tool">baseline</span></div>
+  <div class="st-row"><span class="st-w">10⁹ W</span><span class="st-src">ITER design fusion output (500 MW)</span><span class="st-tool link">↗ Fusion Reactor</span></div>
+  <div class="st-row"><span class="st-w">10¹⁰ W</span><span class="st-src">NIF ignition target, commercial fusion plant</span><span class="st-tool link">↗ Fusion Reactor</span></div>
+  <div class="st-row"><span class="st-w">10¹⁶ W</span><span class="st-src">Kardashev Type 1 — planetary civilization</span><span class="st-tool">—</span></div>
+  <div class="st-row"><span class="st-w">10²⁶ W</span><span class="st-src">Solar luminosity — full stellar capture</span><span class="st-tool link">↗ Dyson Sphere</span></div>
+  <div class="st-row"><span class="st-w">10²⁶ W</span><span class="st-src">Kardashev Type 2 — stellar civilization</span><span class="st-tool link">↗ Dyson Sphere</span></div>
+  <div class="st-row"><span class="st-w">10³⁶ W</span><span class="st-src">Kardashev Type 3 — galactic civilization</span><span class="st-tool">—</span></div>
+  <div class="st-row"><span class="st-w">10³⁸ W</span><span class="st-src">Stellar-mass black hole (BZ process, a→1)</span><span class="st-tool link">↗ Black Hole</span></div>
+  <div class="st-row"><span class="st-w">10⁴⁷ W</span><span class="st-src">Supermassive BH (10⁹ M☉, AGN / quasar regime)</span><span class="st-tool link">↗ Black Hole</span></div>
+</div>
+
+<!-- ── PHYSICS REFERENCE ───────────────────────────────────── -->
+<div class="ref">
+  <div class="ref-block">
+    <div class="ref-title">Fusion · Lawson Criterion</div>
+    <div class="ref-eq">
+      nτT &gt; 3×10²¹ m⁻³·s·keV<br>
+      Q = P_fusion / P_heating<br>
+      ⟨σv⟩_DT peak ≈ 3.7×10⁻²² m³/s at 70 keV<br>
+      T_ignition ≈ 13–20 keV (150–230 MK)
+    </div>
+    <div class="ref-note">ITER: n=10²⁰, τ=3.7s, T=15keV → Q≈10 target</div>
+  </div>
+  <div class="ref-block">
+    <div class="ref-title">Dyson Sphere · Power Capture</div>
+    <div class="ref-eq">
+      F = L☉ / (4πR²)<br>
+      P = F × A × coverage × (1−albedo)<br>
+      T_eq = [F(1−a) / (2σε)]^(1/4)<br>
+      K = (log₁₀P − 6) / 10
+    </div>
+    <div class="ref-note">σ_crit = L/(4πGMc) for radiation-pressure hover</div>
+  </div>
+  <div class="ref-block">
+    <div class="ref-title">Black Hole · Kerr Metric</div>
+    <div class="ref-eq">
+      rₛ = 2GM/c²<br>
+      r± = (rₛ/2)(1 ± √(1−a²))<br>
+      T_H = ℏc³ / (8πGMk_B)<br>
+      η_max(Penrose) ≈ 29.3% (a→1)
+    </div>
+    <div class="ref-note">BZ: P ∝ a²B²M² — requires accreting magnetized plasma</div>
+  </div>
+  <div class="ref-block">
+    <div class="ref-title">Physics Constants · CODATA 2018</div>
+    <div class="ref-eq">
+      G  = 6.67430×10⁻¹¹ m³/kg·s²<br>
+      c  = 2.99792458×10⁸ m/s<br>
+      ℏ  = 1.05457×10⁻³⁴ J·s<br>
+      k_B= 1.38065×10⁻²³ J/K
+    </div>
+    <div class="ref-note">All simulators use exact CODATA 2018 values</div>
+  </div>
+</div>
+
+<!-- ── FOOTER ──────────────────────────────────────────────── -->
+<footer>
+  <div>TriPod Energy Suite · CC-BY-ND-4.0 · <a href="https://github.com/DavidWise01/tripod-energy-suite">github.com/DavidWise01/tripod-energy-suite</a></div>
+  <div>Anchor × Bubble × Gravity Well · World = Family</div>
+</footer>
+
+<!-- ── ENERGY SCALE CANVAS ────────────────────────────────── -->
+<script>
+(() => {
+const canvas = document.getElementById('scale-canvas');
+const ctx    = canvas.getContext('2d');
+let W = 0, H = 0, t = 0;
+
+// Energy scale: log10(W) from 0 to 47
+const LOG_MIN = 0, LOG_MAX = 47;
+
+// Reference points on the scale
+const REFS = [
+  { log: 0,  label: '1 W',      sub: 'candle',              color: '#6b6b5f' },
+  { log: 3,  label: '1 kW',     sub: 'human',               color: '#8a8a7a' },
+  { log: 6,  label: '1 MW',     sub: 'small plant',         color: '#9a9a88' },
+  { log: 9,  label: '1 GW',     sub: 'fusion reactor',      color: '#4488ff', tool: true },
+  { log: 13, label: '10 TW',    sub: 'Earth civilization',   color: '#c4a35a' },
+  { log: 16, label: '10 PW',    sub: 'Kardashev I',         color: '#b4b09a' },
+  { log: 26, label: '3.8×10²⁶', sub: 'Dyson sphere · Sun',  color: '#ffcc44', tool: true },
+  { log: 36, label: '10³⁶ W',   sub: 'Kardashev III',       color: '#b4b09a' },
+  { log: 40, label: '10⁴⁰ W',   sub: 'stellar BH (BZ)',     color: '#38b6a0', tool: true },
+  { log: 47, label: '10⁴⁷ W',   sub: '10⁹M☉ BH · quasar',  color: '#38b6a0', tool: true },
+];
+
+// Tool markers
+const TOOLS = [
+  { log: 9,  label: 'FUSION', color: '#4488ff',  href: 'fusion/fusion-reactor.html', y: 0.32 },
+  { log: 26, label: 'DYSON',  color: '#ffcc44',  href: 'dyson-sphere/dyson-sphere.html', y: 0.52 },
+  { log: 43, label: 'BLACK HOLE', color: '#38b6a0', href: 'black-hole/black-hole-energy-v2.html', y: 0.38 },
+];
+
+// Particles flowing along the scale
+const PARTS = Array.from({ length: 60 }, (_, i) => ({
+  log:   Math.random() * LOG_MAX,
+  speed: (0.04 + Math.random() * 0.12) * (Math.random() < 0.7 ? 1 : -1),
+  y:     0.4 + (Math.random() - 0.5) * 0.08,
+  size:  1 + Math.random() * 2,
+  alpha: 0.3 + Math.random() * 0.5,
+  color: `hsl(${Math.random() < 0.4 ? 220 : Math.random() < 0.5 ? 45 : 175},60%,65%)`,
+}));
+
+function logToX(log) {
+  return ((log - LOG_MIN) / (LOG_MAX - LOG_MIN)) * W;
+}
+
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  const dpr = Math.min(devicePixelRatio, 2);
+  W = canvas.width  = Math.round(r.width  * dpr);
+  H = canvas.height = Math.round(r.height * dpr);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = 'transparent';
+  ctx.fillRect(0, 0, W, H);
+
+  const cy = H * 0.55;
+
+  // ── Gradient glow track ──────────────────────────────────
+  const gtrack = ctx.createLinearGradient(0, 0, W, 0);
+  gtrack.addColorStop(0,     'rgba(100,100,80,0.04)');
+  gtrack.addColorStop(0.2,   'rgba(68,136,255,0.12)');
+  gtrack.addColorStop(0.56,  'rgba(255,204,68,0.14)');
+  gtrack.addColorStop(0.9,   'rgba(56,182,160,0.16)');
+  gtrack.addColorStop(1,     'rgba(56,182,160,0.08)');
+  ctx.fillStyle = gtrack;
+  ctx.fillRect(0, cy - 24, W, 48);
+
+  // ── Main scale line ──────────────────────────────────────
+  const trackGrad = ctx.createLinearGradient(0, 0, W, 0);
+  trackGrad.addColorStop(0,    'rgba(60,60,50,0.6)');
+  trackGrad.addColorStop(0.2,  'rgba(68,136,255,0.7)');
+  trackGrad.addColorStop(0.55, 'rgba(255,204,68,0.7)');
+  trackGrad.addColorStop(0.9,  'rgba(56,182,160,0.8)');
+  trackGrad.addColorStop(1,    'rgba(56,182,160,0.6)');
+  ctx.beginPath();
+  ctx.moveTo(0, cy);
+  ctx.lineTo(W, cy);
+  ctx.strokeStyle = trackGrad;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // ── Particles flowing ────────────────────────────────────
+  for (const p of PARTS) {
+    p.log += p.speed * 0.016;
+    if (p.log < LOG_MIN - 2) p.log = LOG_MAX + 1;
+    if (p.log > LOG_MAX + 2) p.log = LOG_MIN - 1;
+    const x = logToX(p.log);
+    const y = cy + (p.y - 0.55) * H * 0.6;
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color.replace(')',`,${p.alpha * (0.7 + 0.3 * Math.sin(t*2 + p.log))})`).replace('hsl','hsla');
+    ctx.fill();
+  }
+
+  // ── Reference ticks + labels ─────────────────────────────
+  for (const ref of REFS) {
+    const x = logToX(ref.log);
+    const pulse = ref.tool ? 0.7 + 0.3 * Math.sin(t * 2.5 + ref.log * 0.3) : 1;
+
+    // Tick
+    ctx.beginPath();
+    ctx.moveTo(x, cy - 12);
+    ctx.lineTo(x, cy + 12);
+    ctx.strokeStyle = ref.color + (ref.tool ? 'ee' : '88');
+    ctx.lineWidth = ref.tool ? 2 : 1;
+    ctx.stroke();
+
+    if (ref.tool) {
+      // Glow dot
+      const gd = ctx.createRadialGradient(x, cy, 0, x, cy, 18);
+      gd.addColorStop(0, ref.color + '55');
+      gd.addColorStop(1, 'transparent');
+      ctx.fillStyle = gd;
+      ctx.beginPath();
+      ctx.arc(x, cy, 18, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Log label (above)
+    ctx.fillStyle = ref.tool ? ref.color : '#4a4a42';
+    ctx.font = `${ref.tool ? 500 : 400} ${10 * (W/800)}px IBM Plex Mono, monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(ref.label, x, cy - 20);
+
+    // Sub label (below)
+    ctx.fillStyle = ref.tool ? ref.color + 'aa' : '#3a3a30';
+    ctx.font = `${9 * (W/800)}px IBM Plex Mono, monospace`;
+    ctx.fillText(ref.sub, x, cy + 26);
+  }
+
+  // ── Tool name labels ─────────────────────────────────────
+  for (const tool of TOOLS) {
+    const x  = logToX(tool.log);
+    const ty = H * tool.y;
+    const pulse = 0.6 + 0.4 * Math.sin(t * 1.8 + tool.log * 0.2);
+
+    // Connector line from scale to label
+    ctx.beginPath();
+    ctx.moveTo(x, cy - 12);
+    ctx.lineTo(x, ty + 14);
+    ctx.strokeStyle = tool.color + `${Math.round(pulse * 120).toString(16).padStart(2,'0')}`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label box
+    const lw = tool.label.length * 6.5 * (W/800) + 20;
+    ctx.fillStyle = 'rgba(10,10,8,0.85)';
+    ctx.strokeStyle = tool.color + `${Math.round(pulse * 180).toString(16).padStart(2,'0')}`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x - lw/2, ty - 12, lw, 24, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = tool.color;
+    ctx.font = `600 ${10 * (W/800)}px IBM Plex Mono, monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(tool.label, x, ty + 4);
+  }
+
+  // ── Axis labels ──────────────────────────────────────────
+  ctx.fillStyle = '#3a3a30';
+  ctx.font = `${9 * (W/800)}px IBM Plex Mono, monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText('log₁₀(W)', 12, cy - 30);
+  ctx.textAlign = 'right';
+  ctx.fillText('10⁴⁷ W →', W - 12, cy - 30);
+
+  t += 0.016;
+  requestAnimationFrame(draw);
+}
+draw();
+
+// Clickable tool markers
+canvas.addEventListener('click', e => {
+  const r  = canvas.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (W / r.width);
+  for (const tool of TOOLS) {
+    const tx = logToX(tool.log);
+    if (Math.abs(mx - tx) < 40) {
+      window.location.href = tool.href;
+      return;
+    }
+  }
+});
+canvas.style.cursor = 'default';
+canvas.addEventListener('mousemove', e => {
+  const r  = canvas.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (W / r.width);
+  const near = TOOLS.some(tool => Math.abs(mx - logToX(tool.log)) < 40);
+  canvas.style.cursor = near ? 'pointer' : 'default';
+});
+
+})();
+</script>
+
+</body>
+</html>

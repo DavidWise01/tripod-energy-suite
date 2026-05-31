@@ -1,9 +1,9 @@
 # TRIPOD ENERGY SUITE
 ### Civilization-Scale Energy Simulators
 
-> From stellar capture to black hole extraction — interactive physics tools for energy at every scale.
+> From fusion reactors to stellar capture to black hole extraction — interactive physics tools for energy at every scale.
 
-Two standalone HTML simulators. No dependencies. No build step. Open in browser.
+Three standalone HTML simulators. No dependencies. No build step. Open `index.html` in a browser.
 
 **Author:** David Lee Wise (ROOT0) / TriPod LLC  
 **License:** CC-BY-ND-4.0
@@ -12,11 +12,49 @@ Two standalone HTML simulators. No dependencies. No build step. Open in browser.
 
 ## Tools
 
-| File | Description |
-|------|-------------|
-| `black-hole/black-hole-energy-v1.html` | Black hole energy extraction — 4 methods, canvas visualization |
-| `black-hole/black-hole-energy-v2.html` | v2 — Real Kerr metric, SI constants, Schwarzschild radius |
-| `dyson-sphere/dyson-sphere.html` | Dyson sphere simulator — Swarm / Bubble / Shell variants, Kardashev scale |
+| File | Scale | Description |
+|------|-------|-------------|
+| `index.html` | 10⁰ → 10⁴⁷ W | Landing page — full Kardashev energy ladder with clickable scale |
+| `fusion/fusion-reactor.html` | 10⁶ – 10¹⁰ W | **NEW** — Tokamak + ICF, Bosch-Hale D-T cross-sections, Lawson criterion |
+| `dyson-sphere/dyson-sphere.html` | 10²⁰ – 10²⁶ W | Dyson sphere — Swarm / Bubble / Shell variants, Kardashev scale |
+| `black-hole/black-hole-energy-v2.html` | 10³⁰ – 10⁴⁷ W | Black hole — Hawking / Penrose / BZ, real Kerr metric |
+
+---
+
+## Fusion Reactor (new in v1.1)
+
+### How to Use
+
+1. Open `fusion/fusion-reactor.html`
+2. Select mode: **Tokamak** (ITER geometry) or **ICF** (NIF-style)
+3. Select fuel: **D·T** / **D·D** / **p·B¹¹**
+4. Adjust parameters (temperature, density, confinement time, plasma volume)
+5. Watch Q factor, Lawson criterion, fusion power, and net output update live
+6. Click **Initiate Plasma** to fire
+
+### Physics
+
+**Reactivity (Bosch-Hale D-T, verified reference points):**
+```
+T = 10 keV → σv = 6.3×10⁻²⁴ m³/s
+T = 20 keV → σv = 4.2×10⁻²³ m³/s  (ITER operating range)
+T = 70 keV → σv = 3.7×10⁻²² m³/s  (peak for D-T)
+```
+
+**Lawson criterion:**
+```
+D-T:   nτT > 3×10²¹ m⁻³·s·keV
+D-D:   nτT > 2×10²² m⁻³·s·keV   (10× harder)
+p-B11: nτT > 2×10²⁴ m⁻³·s·keV   (aneutronic, extreme)
+```
+
+**Q factor:** `Q = P_fusion / P_heating`  
+- Q = 1 → breakeven (NIF achieved briefly, 2022)
+- Q = 10 → ITER target
+- Q > 20 → ignition regime
+
+**ICF areal density:** `ρR = ρ₀·R·(v_imp/v_ign)^(2/3)`  
+**Burn efficiency (Fraley):** `η = ρR / (6.7 + ρR)`
 
 ---
 
